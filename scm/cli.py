@@ -4,13 +4,13 @@
 from distutils.log import ERROR
 from typing import Optional 
 import typer
-from scm import ERRORS, __version__, __app__name__, default_config
+from scm import ERRORS, __version__, __app_name__, default_config
 
 app = typer.Typer() 
 
 def _version(value: bool) -> None: 
     if value: 
-        typer.echo(f"{__app__name__} - v{__version__}")
+        typer.echo(f"{__app_name__} - v{__version__}")
         raise typer.Exit() 
 
 @app.command()
@@ -19,19 +19,66 @@ def init(
         str(default_config.CONFIG_FILE_PATH), 
         "--default-file", 
         "-f", 
-        prompt="configuration file for configs"
+        prompt="default configuration"
     )
 ) -> None: 
     """Initialize the configuration file for the configuration"""
-    app_init_error = default_config.init_app(file)
+    # app_init_error = default_config.init_app(file)
     
-    if app_init_error:
-        typer.secho(
-            f'Creating the config file failed with "{ERRORS[app_init_error]}"',
-            fg=typer.colors.RED 
-        )
-        raise typer.Exit(1)
-    
+    # if app_init_error:
+    #     typer.secho(
+    #         f'Creating the config file failed with "{ERRORS[app_init_error]}"',
+    #         fg=typer.colors.RED 
+    #     )
+    #     raise typer.Exit(1)
+
+# create command 
+@app.command()
+def create(
+    file: str = typer.Option(
+        str(default_config.CONFIG_FILE_PATH), 
+        "--default-file", 
+        "-f", 
+        prompt="configuration file for configs"
+    )
+) -> None: 
+   return 0 
+
+# info command     
+@app.command()
+def info(
+    file: str = typer.Option(
+        str(default_config.CONFIG_FILE_PATH), 
+        "--default-file", 
+        "-f", 
+        prompt="configuration file for configs"
+    )
+) -> None: 
+    return 0 
+
+#validate command 
+@app.command()
+def validate(
+    file: str = typer.Option(
+        str(default_config.CONFIG_FILE_PATH), 
+        "--default-file", 
+        "-f", 
+        prompt="configuration file for configs"
+    )
+) -> None: 
+    return 0
+ 
+#push command 
+@app.command()
+def push(
+    file: str = typer.Option(
+        str(default_config.CONFIG_FILE_PATH), 
+        "--default-file", 
+        "-f", 
+        prompt="configuration file for configs"
+    )
+) -> None: 
+    return 0     
 
 @app.callback() 
 def main(

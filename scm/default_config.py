@@ -9,13 +9,13 @@ import typer
 from scm import (
     DIR_ERROR, 
     FILE_ERROR, 
-    IO_ERROR,
-    SUCCESS, 
-    VALIDATION_ERROR, 
-    OS_ERROR
+    SUCCESS,
+    __app_name__
+
 )
 
-CONFIG_DIR_PATH = Path(typer.get_app_dir(__app__name__))
+
+CONFIG_DIR_PATH = Path(typer.get_app_dir(__app_name__))
 CONFIG_FILE_PATH = CONFIG_DIR_PATH / "default.ini"
 
 def _init_config_file() -> int: 
