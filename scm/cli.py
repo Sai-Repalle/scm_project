@@ -80,6 +80,19 @@ def push(
 ) -> None: 
     return 0     
 
+#clean command 
+@app.command()
+def clear(
+    file: str = typer.Option(
+        str(default_config.CONFIG_FILE_PATH), 
+        "--default-file", 
+        "-f", 
+        prompt="configuration file for configs"
+    )
+) -> None: 
+    return 0  
+
+
 @app.callback() 
 def main(
     version: Optional[bool] = typer.Option(
