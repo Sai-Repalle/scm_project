@@ -1,4 +1,4 @@
-# default configuration for the code 
+# default configuration for the code
 from ordered_set import OrderedSet
 
 SUPP_RES = OrderedSet(['SERVICE', 'FILE', 'DIRECTORY'])

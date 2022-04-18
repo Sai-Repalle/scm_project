@@ -342,15 +342,26 @@ def push(receipe) -> None:
 def clean(receipe) -> None:
     pass
 
+import subprocess 
+
+def loop_through_os_commands(input) -> None:
+    for i in input: 
+        process = subprocess.Popen(i.split(), stdout = subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        
+        while True:
+            output = process.stdout.readline()
+            print(output.strip())
+            # Do something else
+            return_code = process.poll()
+            if return_code is not None:
+                # Process has finished, read rest of the output 
+                for output in process.stdout.readlines():
+                    print(output.strip())
+                break
+    
+
+
 
 if __name__ == "__main__":
-    receipe = "apache"
-    # create(receipe)
-    #valid = validate(receipe)
-    # print(valid)
-    # if valid:
-    # info(receipe)
-    # push(receipe)
-    val = get_diff_hash_res(receipe)
-    output = write_hash_config(val, receipe, hash_configuration)
-    validate(receipe, output)
+    loop_through_os_commands(['powershell.exe echo hello world', 'powershell.exe echo test1'])
+    
