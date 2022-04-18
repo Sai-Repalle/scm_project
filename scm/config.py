@@ -9,7 +9,6 @@ import json
 import hashlib
 from deepdiff import DeepDiff
 from deepdiff.model import PrettyOrderedSet
-import re
 
 logging.basicConfig(format='[%(levelname)s][%(asctime)s]::%(message)s',
                     datefmt="%m-%d-%Y %H:%M:%S")

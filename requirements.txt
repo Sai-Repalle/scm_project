@@ -3,3 +3,6 @@ colorama
 shellingham
 dynaconf
 pytest
+ordered_set
+deepdiff
+toml 
