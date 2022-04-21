@@ -1,7 +1,7 @@
 """Root directory for the scm package"""
 # scm/__init__.py
 
-__app__name__ = "scm"
+__app_name__ = "scm"
 __version__ = "0.1.0"
 
 (

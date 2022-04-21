@@ -1,0 +1,9 @@
+{
+  "default": {
+    "DEBUG": false,
+    "CONFIG_DIR": "config",
+    "CONFIG_DEF_FILE": "default.toml",
+    "CONFIG_HASH_DIR": "config_hash",
+    "CONFIG_HASH_FILE": "hash_config_md5.json"
+  }
+}
