@@ -1,5 +1,5 @@
-# CVER
-self managed configuration mangement(scm) is a simple commandline app for configuration management
+# SCM
+self managed configuration mangement(scm) is a simple command line app for configuration management, written in python.
 # Installation
 ## Using Pip
 ```bash
@@ -7,18 +7,30 @@ self managed configuration mangement(scm) is a simple commandline app for config
 ```
 ## Manual
 ```bash
-  $ git clone https://github.com/citguru/cevr
-  $ cd cver
+  $ git clone https://github.com/Sai-Repalle/scm_project
+  $ cd scm_project
   $ python setup.py install
 ```
 # Usage
 ```bash
-$ cver
+$ scm
 ```
-## Search
-`search <keyword>`
+## initlization
+init command is used for initlization and helpful to create the respective directories, also this command is useful for exapanding future versions of the scm tool
+
+`init <keyword>`
+
 ```bash
-$ cver search python
+$ scm init python
+```
+### output 
+```
+scm init   
+[INFO][04-17-2022 23:59:26]::Reading the Json configuration C:\Users\sarepall\Documents\scm_project\scm\settings\settings.json
+[INFO][04-17-2022 23:59:26]::creating directory CONFIG_DIR
+[INFO][04-17-2022 23:59:26]::creating directory CONFIG_HASH_DIR
+[INFO][04-17-2022 23:59:26]::creating files CONFIG_DEF_FILE
+[INFO][04-17-2022 23:59:26]::creating files CONFIG_HASH_FILE
 ```
 ## Lookup
 `search <name>`
