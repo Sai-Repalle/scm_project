@@ -15,7 +15,7 @@ from json.decoder import JSONDecodeError
 import typer
 from pathlib import Path
 from scm import defaults
-
+from subprocess import STDOUT, check_call, CalledProcessError
 
 from scm import (
     DIR_ERROR,
@@ -93,7 +93,7 @@ def get_user_settings(receipe, validator=None, environments=True) -> Dict:
 
 def get_user_defined_resources(settings) -> Set:
     return (OrderedSet([*settings]) - defaults.DEFAULT_PARAMTERS)
-cl
+
 
 def validate_unsupported_resources(user_resources) -> Set:
     unsupported_resources = (
@@ -229,6 +229,14 @@ def write_hash_config(hash_dict_set, receipe, hash_file_name):
                     output[key] = dict(val)
     return {receipe: output}
 
+
+def run_os_command(command) -> None: 
+    try: 
+        code = check_call(command.split(),stdout=open(os.devnull,'wb'), stderr=STDOUT) 
+    except CalledProcessError as e:
+        logging.error(str(e))
+        code = 1 
+    return code 
 
 CONFIG_DIR_PATH = os.getcwd()
 CONFIG_FILE_PATH = os.path.join(

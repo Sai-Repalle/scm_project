@@ -8,7 +8,7 @@ from typing import Optional
 from ordered_set import OrderedSet
 import typer
 from scm import ERRORS, __version__, __app_name__, default_config
-from scm.default_config import read_json, create_def_directory, create_def_files, get_diff_hash_res, check_if_receipe_exists, get_user_settings, get_user_defined_resources, validate_unsupported_resources, gen_command
+from scm.default_config import read_json, create_def_directory, create_def_files, get_diff_hash_res, check_if_receipe_exists, get_user_settings, get_user_defined_resources, validate_unsupported_resources, gen_command, run_os_command
 from typing import List, Set, Dict
 from dynaconf import Dynaconf
 from dynaconf.utils.boxing import DynaBox
@@ -266,14 +266,17 @@ def push(
 
     diff = get_diff_hash_res(receipe, hash_config_dir)
     user_settings = get_user_settings(receipe)
-
+    
+        
     for i in user_resources:
         gen_command(user_settings, i, output, diff)
 
-    logging.info(output)
+    for cmd in output:
+        code = run_os_command(cmd)
+        if code:
+            logging.error(f"Failed to run the command {cmd}")
+            raise typer.Exit()         
 
-    # loop through the os commands and update the configuration based on the
-    # setting
 
     return 0
 
@@ -302,7 +305,7 @@ def diff(
     for i in diff:
         logging.info(
             f"{i} - {user_settings[i.split('.')[0]][i.split('.')[1]]}")
-
+        
     return 0
 
 
