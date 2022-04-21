@@ -93,7 +93,7 @@ def get_user_settings(receipe, validator=None, environments=True) -> Dict:
 
 def get_user_defined_resources(settings) -> Set:
     return (OrderedSet([*settings]) - defaults.DEFAULT_PARAMTERS)
-
+cl
 
 def validate_unsupported_resources(user_resources) -> Set:
     unsupported_resources = (
@@ -172,7 +172,7 @@ def _read_json(filename) -> Dict:
         dict_output = json.load(f)
     except Exception as e:
         return None
-
+    return dict_output 
 
 def _get_diff_hash(existing_hash, curr_hash, receipe) -> List:
     output = []
