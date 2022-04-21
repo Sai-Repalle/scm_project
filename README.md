@@ -1,11 +1,11 @@
 # SCM
-self managed configuration mangement(scm) is a simple command line app for configuration management, written in python.
+Self Managed Configuration Management(scm) is a simple command line app for configuration management, written in python.
 # Installation
 ## Using Pip
 ```bash
   $ pip install scm
 ```
-## Manual
+## Manual clone
 ```bash
   $ git clone https://github.com/Sai-Repalle/scm_project
   $ cd scm_project
@@ -32,8 +32,32 @@ scm init
 [INFO][04-17-2022 23:59:26]::creating files CONFIG_DEF_FILE
 [INFO][04-17-2022 23:59:26]::creating files CONFIG_HASH_FILE
 ```
-## Lookup
-`search <name>`
+## create
+`create <name>`
 ```bash
-$ cver look-up CVE-2020-2121
+$ scm init --receipe_name <receipe_name>
+```
+
+## info
+`info --receipe_name <name>`
+```bash
+$ scm info --receipe_name <receipe_name>
+```
+
+## validate
+`validate <name>`
+```bash
+$ scm validate --receipe_name <receipe_name>
+```
+
+## push
+`push <name>`
+```bash
+$ scm push --receipe_name <receipe_name>
+```
+
+## clean
+`clean <name>`
+```bash
+$ scm clean --receipe_name <receipe_name>
 ```
