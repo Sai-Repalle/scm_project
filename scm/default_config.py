@@ -15,7 +15,7 @@ from json.decoder import JSONDecodeError
 import typer
 from pathlib import Path
 from scm import defaults
-
+from subprocess import STDOUT, check_call, CalledProcessError
 
 from scm import (
     DIR_ERROR,
@@ -172,7 +172,7 @@ def _read_json(filename) -> Dict:
         dict_output = json.load(f)
     except Exception as e:
         return None
-
+    return dict_output 
 
 def _get_diff_hash(existing_hash, curr_hash, receipe) -> List:
     output = []
@@ -229,6 +229,14 @@ def write_hash_config(hash_dict_set, receipe, hash_file_name):
                     output[key] = dict(val)
     return {receipe: output}
 
+
+def run_os_command(command) -> None: 
+    try: 
+        code = check_call(command.split(),stdout=open(os.devnull,'wb'), stderr=STDOUT) 
+    except CalledProcessError as e:
+        logging.error(str(e))
+        code = 1 
+    return code 
 
 CONFIG_DIR_PATH = os.getcwd()
 CONFIG_FILE_PATH = os.path.join(
