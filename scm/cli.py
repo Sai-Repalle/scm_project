@@ -1,23 +1,20 @@
 """Module provides the CLI package"""
 # scm/cli.py
+from multiprocessing.dummy import current_process
 import os
-import sys
 import logging
-from distutils.log import ERROR
+import re
 from typing import Optional
 from ordered_set import OrderedSet
 import typer
-from scm import ERRORS, __version__, __app_name__, default_config
-from scm.default_config import read_json, create_def_directory, create_def_files, get_diff_hash_res, check_if_receipe_exists, get_user_settings, get_user_defined_resources, validate_unsupported_resources, gen_command, run_os_command
-from typing import List, Set, Dict
+import functools
+from scm import __version__, __app_name__, default_config
+from scm.default_config import read_json, create_def_directory, create_def_files, get_diff_hash_res, check_if_receipe_exists, get_user_settings, get_user_defined_resources, validate_unsupported_resources, gen_command, run_os_command, _hash_fun,_get_diff_hash
 from dynaconf import Dynaconf
 from dynaconf.utils.boxing import DynaBox
 from dynaconf.vendor.toml.decoder import TomlDecodeError
 from ordered_set import OrderedSet
-import json
-import hashlib
-from deepdiff import DeepDiff
-from deepdiff.model import PrettyOrderedSet
+from collections import OrderedDict
 from scm import defaults
 
 # BASIC LOGGING MESSAGE
@@ -64,6 +61,7 @@ def init(
         logging.warning("default files creation failed")
         raise typer.Exit()
 
+    
     return 0
 
 # create command
@@ -79,6 +77,8 @@ def create(
     con_dir, def_file = def_settings_dict.get('CONFIG_DIR'), f"{receipe}.toml"
     con_dir_full = os.path.join(os.getcwd(), con_dir)
     def_file_full = os.path.join(con_dir_full, def_file)
+    
+    
 
     if not check_if_receipe_exists(receipe) or force:
         with open(def_file_full, mode="w") as f:
@@ -88,6 +88,8 @@ def create(
             f"`{receipe}` configuration file exists, use --force to override.")
         raise typer.Exit()
 
+    
+    
     return 0
 
 
@@ -241,14 +243,9 @@ def validate(
         f"{receipe} receipe file is valid for push, use `scm push` to push the file")
     return 0
 
-# push command
-
-
-@app.command()
-def push(
-    receipe: str = typer.Option(...)
-) -> None:
-    output = []
+def push_command(receipe) -> tuple:
+    
+    curr_resouces = OrderedDict()
 
     settings = read_json(default_config.CONFIG_FILE_PATH)['default']
 
@@ -263,48 +260,61 @@ def push(
 
     user_settings = get_user_settings(receipe)
     user_resources = get_user_defined_resources(user_settings)
-
-    diff = get_diff_hash_res(receipe, hash_config_dir)
-    user_settings = get_user_settings(receipe)
     
-        
+    curr_resouces[receipe] = {}   
     for i in user_resources:
-        gen_command(user_settings, i, output, diff)
+        gen_command(user_settings, i, curr_resouces[receipe])
+    
+    write_dict = {}
+    write_dict[receipe] = {}
+    
+    for index,value in curr_resouces[receipe].items():
+        concat = functools.reduce(lambda x, y: x + y, value, "")
+        write_dict[receipe][index] = hash(concat)
+    
+    existing_hash = read_json(hash_config_dir)
+    
+    if not existing_hash:
+        existing_hash[receipe] = {}
+    
+    diff_output = _get_diff_hash(existing_hash[receipe],write_dict[receipe])
+    print(diff_output)
+      
+    return (diff_output, curr_resouces)
 
-    for cmd in output:
-        code = run_os_command(cmd)
-        if code:
-            logging.error(f"Failed to run the command {cmd}")
-            raise typer.Exit()         
 
+@app.command()
+def push(
+    receipe: str = typer.Option(...)
+) -> None:
+    
+    output, curr_resources = push_command(receipe)
+    
+    logging.info("Following resources will be applied:")
+    for cmd in output: 
+        if cmd in  curr_resources[receipe]:       
+            logging.info(f"{cmd}: {curr_resources[receipe][cmd]}")
+            for c in cmd: 
+                logging.info(f"Applying the command {c}")
+                code = run_os_command(c)
+                if code:
+                    logging.error(f"Failed to run the command {c}")
+                    raise typer.Exit()
 
     return 0
-
-# diff command
 
 
 @app.command()
 def diff(
     receipe: str = typer.Option(...)
 ) -> None:
-    settings = read_json(default_config.CONFIG_FILE_PATH)['default']
-
-    os.environ['ROOT_PATH_FOR_DYNACONF'] = settings.get(
-        'CONFIG_DIR', os.path.join(os.getcwd(), "config"))
-
-    hash_config_dir = os.path.join(
-        settings.get('CONFIG_HASH_DIR'),
-        settings.get('CONFIG_HASH_FILE'))
-
-    validate(receipe)
-
-    diff = get_diff_hash_res(receipe, hash_config_dir)
-    user_settings = get_user_settings(receipe)
-
-    logging.info("Following changes will be applied to the configuration")
-    for i in diff:
-        logging.info(
-            f"{i} - {user_settings[i.split('.')[0]][i.split('.')[1]]}")
+    
+    output, curr_resources = push_command(receipe)
+    print(output)
+    for i in output: 
+        if i in  curr_resources[receipe]:
+            logging.info("Following resources will be applied:")
+            logging.info(f"{i}: {curr_resources[receipe][i]}")    
         
     return 0
 
