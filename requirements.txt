@@ -1,5 +1,6 @@
 typer
 colorama
+wheel
 shellingham
 dynaconf
 pytest

@@ -12,7 +12,7 @@ import hashlib
 from deepdiff import DeepDiff
 from deepdiff.model import PrettyOrderedSet
 from json.decoder import JSONDecodeError
-import typer
+from scm.defaults import JSON_DIFF_ATTR
 from pathlib import Path
 from scm import defaults
 from subprocess import STDOUT, check_call, CalledProcessError
@@ -39,7 +39,7 @@ def read_json(filename):
                 logging.warning(f"Invalid JSON file {file}")
                 return FILE_ERROR
     except FileNotFoundError:
-        logging.warning(f"File {filename} not found")
+        logging.ERROR(f"File {filename} not found")
         return FILE_ERROR
 
 
@@ -72,6 +72,15 @@ def create_def_files(user_dict) -> bool:
                         os.path.join(
                             user_dict['CONFIG_HASH_DIR'],
                             user_dict[key])).touch()
+                    #write empty json dict to the file 
+                    d = {}
+                    # Serializing json 
+                    json_object = json.dumps(d, indent = 4)
+                    # Writing to sample.json
+                    with open(os.path.join(
+                            user_dict['CONFIG_HASH_DIR'],
+                            user_dict[key]), "w") as outfile:
+                        outfile.write(json_object)
             else:
                 logging.info(f"{key} file already exists")
         else:
@@ -104,37 +113,51 @@ def validate_unsupported_resources(user_resources) -> Set:
 def gen_command(
         settings_dict: Dict,
         key: str,
-        output: List,
-        diff: List) -> None:
+        output: List) -> None:
     """Function to the generate the OS commands by reading the settings_dict and update the input list format"""
     if key.upper() in ["SERVICE"]:
         for index, value in settings_dict[key].items():
-            if f"{key}.{index}" in diff and isinstance(
+            output[f"{key}.{index}"] = []
+            if isinstance(
                     value, DynaBox) and index != "params":
                 for n in value['name']:
                     for act in value['action']:
                         if act in defaults.SERVICE_SETUP_ACTIONS:
-                            output.append("sudo apt update")
-                            output.append(f"sudo apt {act} {n} -y")
+                            output[f"{key}.{index}"].append("sudo apt update")
+                            output[f"{key}.{index}"].append(f"sudo apt {act} {n} -y")
                         else:
                             if act in defaults.SERVICE_OP_ACTIONS:
-                                output.append(f"systemctl {act} {n} -force")
+                                output[f"{key}.{index}"].append(f"systemctl {act} {n} -force")
 
     if key.upper() in ["DIRECTORY", "FILE"]:
         for index, value in settings_dict[key].items():
-            if f"{key}.{index}" in diff:
-                for n in value['name']:
-                    for act in value['action']:
-                        if act == "create" and value['params'].get(
-                                'owner',
-                                None) and value['params'].get(
-                                'group',
-                                None):
-                            cmd: str = f"chown {value['params']['owner']}:{value['params']['group']} {n}"
-                            if value['params'].get('recurse', None) and json.loads(
-                                    (value['params'].get('recurse', None)).lower()):
-                                cmd += " -R"
-                            output.append(cmd)
+            output[f"{key}.{index}"] = []
+            for n in value['name']:
+                for act in value['action']:
+                    if act == "create" and value.get('content',None):
+                        for i in value['content']:
+                            if not value.get('override',None):
+                                cmd: str = f"echo '{i}' >> {n}"
+                            else:
+                                cmd:str = f"echo '{i}' > {n}"
+                            output[f"{key}.{index}"].append(cmd)
+
+                    if act == "create" and key == "DIRECTORY":
+                        cmd: str = f"mkdir -p {n}"
+                        output[f"{key}.{index}"].append(cmd)
+
+                    if act == "create" and value['params'].get(
+                            'owner',
+                            None) and value['params'].get(
+                            'group',
+                            None):
+                        cmd: str = f"chown {value['params']['owner']}:{value['params']['group']} {n}"
+                        if value['params'].get('recurse', None) and json.loads(
+                                (value['params'].get('recurse', None)).lower()):
+                            cmd += " -R"
+
+                        output[f"{key}.{index}"].append(cmd)
+
 
                 if value.get('notifies', None):
                     inp_json = json.loads(
@@ -146,11 +169,12 @@ def gen_command(
                     for n in inp_json['name']:
                         for act in inp_json['action']:
                             if act == "install":
-                                output.append(f"apt-get {act} {n} -y")
+                                output[f"{key}.{index}"].append(f"apt-get {act} {n} -y")
                             else:
-                                output.append(f"systemctl {act} {n} -force")
+                                output[f"{key}.{index}"].append(f"systemctl {act} {n} -force")
 
     return None
+
 
 
 def _hash_fun(user_dict: Dict) -> str:
@@ -174,22 +198,22 @@ def _read_json(filename) -> Dict:
         return None
     return dict_output 
 
-def _get_diff_hash(existing_hash, curr_hash, receipe) -> List:
+def _get_diff_hash(existing_hash, curr_hash) -> List:
     output = []
     if existing_hash:
         res = DeepDiff(curr_hash, existing_hash)
-        for i in json_diff_attr:
+        for i in JSON_DIFF_ATTR:
             if res.get(i, None):
                 if isinstance(res.get(i, None), PrettyOrderedSet):
-                    for val in res.get(i, None):
-                        split_val = val.split('[0]')[1]
-                        if split_val[0] == '[' and split_val[-1] == "]":
-                            split_val = split_val[1:-1]
-                        output.append(split_val.strip("\'"))
+                    for split_val in res.get(i, None):
+                        first_idx = split_val.find('[')
+                        last_idx = split_val.find(']')
+                        split_val = split_val[first_idx+1:last_idx]
+                        output.append(split_val.replace("'",""))
 
     else:
-        for i in curr_hash[receipe]:
-            output += list(i.keys())
+        output = (list(curr_hash.keys()))
+        
     return output
 
 
@@ -205,10 +229,13 @@ def get_diff_hash_res(receipe, hash_config) -> List:
     for res in user_resources:
         if res in user_settings:
             for i, value in user_settings[res].items():
-                hash_val = _hash_fun(user_settings[res][i])
+                print(value)
+                hash_val = _hash_fun(value)
                 hash_dict[f"{res}.{i}"] = hash_val
-
+    
     data[f"{receipe}"] = [hash_dict]
+    print(existing_hash)
+    print(data)
 
     diff_resources = _get_diff_hash(existing_hash, data, receipe)
 
