@@ -133,6 +133,7 @@ Commands:
   init
   push
   validate
+  remove
 
 ```
 ## initialization
@@ -157,7 +158,7 @@ root@machine:~/scm# python3 -m scm init
 ## create
 `create <name>`
 ```bash
-$ scm init --receipe_name <receipe_name>
+$ scm init --receipe <receipe>
 ```
 Below example, will create a receipe called "apache" and `apache.toml` file is created in the config directory located at the root directory of the scm 
 ### output 
@@ -174,25 +175,30 @@ root@machine:~/scm# python3 -m scm create --receipe apache
 
 
 ## info
-`info --receipe_name <name>`
+`info --receipe <name>`
 ```bash
-$ scm info --receipe_name <receipe_name>
+$ scm info --receipe <receipe>
 ```
 ```bash 
 
 ```
 ## validate
-`validate <name>`
+`validate -receipe <name>`
 ```bash
-$ scm validate --receipe_name <receipe_name>
+$ scm validate --receipe <receipe>
 ```
 ## diff
-`diff <name>`
+`diff -receipe <name>`
 ```bash
-$ scm diff --receipe_name <receipe_name>
+$ scm diff --receipe <receipe>
 ```
 ## push
-`push <name>`
+`push -receipe <name>`
 ```bash
-$ scm push --receipe_name <receipe_name>
+$ scm push --receipe <receipe>
 ```
+
+## remove
+`remove --receipe <name> --force <optional> --clean_files <optional>`
+```bash
+$ scm push --receipe <receipe>

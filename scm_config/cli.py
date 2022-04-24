@@ -374,22 +374,20 @@ def remove(
     with open(hash_config_dir) as data_file:
         data = json.load(data_file)
     
-    if not data[receipe]:
+    if not data.get(receipe, None):
         logging.warning(f"`receipe`configuration not found in the hash dataset")
         raise typer.Exit()
     
-    # deletes the configuration 
     del data[receipe]
     
-    with open(hash_config_dir) as data_file:
+    with open(hash_config_dir, "w") as data_file:
         data = json.dump(data, data_file)    
     
     if clean_files and check_if_receipe_exists(receipe):
         logging.info("dropping the receipe file..")
         del_receipe_file(receipe)
         
-     
-        
+         
     return 0
 
 
