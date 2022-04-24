@@ -1,2 +1,41 @@
+[tool.poetry]
+name = "scm_config"
+version = "0.2.1"
+description = "self configuration management written in Python"
+authors = ["Sai Repalle <n.repalle85@gmail.com>"]
+
+# New attributes
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/Sai-Repalle/scm_project"
+repository = "https://github.com/Sai-Repalle/scm_project"
+keywords = ["config", "markdown", "lint"]
+classifiers = [
+    "Environment :: Console",
+    "Operating System :: POSIX :: Linux" 
+]
+
+include = [
+    "LICENSE",
+]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+wheel = "^0.37.1"
+typer = "^0.4.1"
+colorama = "^0.4.4"
+ordered-set = "^4.0.2"
+dynaconf = "^3.1.5"
+pytest = "^7.0.1"
+deepdiff = "^5.7.0"
+
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.poetry.scripts]
-scm = "scm.cli:main"
+scm = 'scm_config.main:main_cli'
+
