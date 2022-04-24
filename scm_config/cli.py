@@ -325,7 +325,7 @@ def diff(
     receipe: str = typer.Option(...)
 ) -> None:
     
-    output, curr_resources = push_command(receipe)
+    output, curr_resources, new_hash_dict = push_command(receipe)
     print(output)
     for i in output: 
         if i in  curr_resources[receipe]:

@@ -276,7 +276,14 @@ def write_hash_config(hash_dict_set, receipe, hash_file_name):
 def run_os_command(command) -> None: 
     try: 
         commands = shlex.split(command)
-        code = check_call(commands, stderr=STDOUT) 
+        if commands[0] == "echo":
+            if commands[2] == ">>":
+                f = open(commands[-1], mode="a")
+            else:
+                f = open(command[-1], mode="w")
+            code = check_call(commands[:2], stderr=STDOUT, stdout=f)
+        else:            
+            code = check_call(commands, stderr=STDOUT) 
     except CalledProcessError as e:
         logging.error(str(e))
         code = 1 
