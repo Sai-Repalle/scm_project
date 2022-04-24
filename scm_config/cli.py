@@ -7,6 +7,7 @@ from scm_config.defaults import SETTINGS_DATA
 from typing import Optional
 from ordered_set import OrderedSet
 import typer
+import hashlib
 import functools
 from scm_config import __version__, __app_name__, default_config
 from scm_config.default_config import read_json, create_def_directory, create_def_files, get_diff_hash_res, check_if_receipe_exists, get_user_settings, get_user_defined_resources, validate_unsupported_resources, gen_command, run_os_command, _hash_fun,_get_diff_hash, _write_json
@@ -255,7 +256,7 @@ def validate(
                                 raise typer.Exit()
 
     logging.info(
-        f"{receipe} receipe file is valid for push, use `scm push` to push the file")
+        f"{receipe} receipe file is valid for push, use `scm diff` to differences with the existing configuration")
     return 0
 
 def push_command(receipe) -> tuple:
@@ -285,7 +286,7 @@ def push_command(receipe) -> tuple:
     
     for index,value in curr_resouces[receipe].items():
         concat = functools.reduce(lambda x, y: x + y, value, "")
-        write_dict[receipe][index] = hash(concat)
+        write_dict[receipe][index] = hashlib.md5(concat.encode("utf-8")).hexadigest()
     
     existing_hash = read_json(hash_config_dir)
     
@@ -293,7 +294,6 @@ def push_command(receipe) -> tuple:
         existing_hash[receipe] = {}
     
     diff_output = _get_diff_hash(existing_hash[receipe],write_dict[receipe])
-    print(diff_output)
       
     return (diff_output, curr_resouces, write_dict)
 
@@ -303,6 +303,17 @@ def push(
     receipe: str = typer.Option(...)
 ) -> None:
     diff_output, curr_resources, new_hash_dict = push_command(receipe)
+    
+    if not diff_output:
+        logging.info(f"`{receipe}` configuration is update to date with the existing configuration")
+        raise typer.Exit()
+    
+    
+    settings = read_json(default_config.CONFIG_FILE_PATH)['default']
+    
+    hash_config_dir = os.path.join(
+        settings.get('CONFIG_HASH_DIR'),
+        settings.get('CONFIG_HASH_FILE'))
     
     logging.info("Following resources will be applied:")
     for cmd in diff_output: 
@@ -314,8 +325,9 @@ def push(
                 if code:
                     logging.error(f"Failed to run the command {c}")
                     raise typer.Exit()
-    # saving the configuration into hash format 
-    #_write_json(new_hash_dict, )
+                
+    with open(hash_config_dir, "w") as output:
+        json.dump(new_hash_dict, output)
 
     return 0
 
@@ -326,7 +338,10 @@ def diff(
 ) -> None:
     
     output, curr_resources, new_hash_dict = push_command(receipe)
-    print(output)
+    
+    if not output:
+        logging.info(f"`{receipe}` configuration is update to date with the existing configuration")
+    
     for i in output: 
         if i in  curr_resources[receipe]:
             logging.info("Following resources will be applied:")

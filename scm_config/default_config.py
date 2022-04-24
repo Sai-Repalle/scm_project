@@ -73,19 +73,20 @@ def create_def_files(user_dict) -> bool:
                             user_dict['CONFIG_DIR'],
                             user_dict[key])).touch()
                 else:
-                    Path(
-                        os.path.join(
+                    hash_directory = os.path.join(
                             user_dict['CONFIG_HASH_DIR'],
-                            user_dict[key])).touch()
-                    #write empty json dict to the file 
-                    d = {}
-                    # Serializing json 
-                    json_object = json.dumps(d, indent = 4)
-                    # Writing to sample.json
-                    with open(os.path.join(
-                            user_dict['CONFIG_HASH_DIR'],
-                            user_dict[key]), "w") as outfile:
-                        outfile.write(json_object)
+                            user_dict[key])
+                    if not os.path.exists(hash_directory):
+                        Path(hash_directory).touch()
+                        #write empty json dict to the file 
+                        d = {}
+                        # Serializing json 
+                        json_object = json.dumps(d, indent = 4)
+                        # Writing to sample.json
+                        with open(os.path.join(
+                                user_dict['CONFIG_HASH_DIR'],
+                                user_dict[key]), "w") as outfile:
+                            outfile.write(json_object)
             else:
                 logging.info(f"{key} file already exists")
         else:
@@ -220,12 +221,11 @@ def _get_diff_hash(existing_hash, curr_hash) -> List:
         res = DeepDiff(curr_hash, existing_hash)
         for i in JSON_DIFF_ATTR:
             if res.get(i, None):
-                if isinstance(res.get(i, None), PrettyOrderedSet):
-                    for split_val in res.get(i, None):
-                        first_idx = split_val.find('[')
-                        last_idx = split_val.find(']')
-                        split_val = split_val[first_idx+1:last_idx]
-                        output.append(split_val.replace("'",""))
+                for split_val in res.get(i, None):
+                    first_idx = split_val.find('[')
+                    last_idx = split_val.find(']')
+                    split_val = split_val[first_idx+1:last_idx]
+                    output.append(split_val.replace("'",""))
 
     else:
         output = (list(curr_hash.keys()))
