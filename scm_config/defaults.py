@@ -10,7 +10,7 @@ FIREWALL_ACTIONS = OrderedSet(['allow'])
 RES_ATTRIBUTES = OrderedSet(['name', 'action'])
 SRV_ATTRIBUTES = OrderedSet(['name', 'action', 'notifies'])
 DIR_ATTRIBUTES = OrderedSet(['params', 'notifies'])
-FILE_ATTRIBUTES = OrderedSet(['params', 'notifies', 'content', 'override'])
+FILE_ATTRIBUTES = OrderedSet(['params', 'notifies', 'content','override'])
 JSON_DIFF_ATTR = OrderedSet(
     ['dictionary_item_added', 'dictionary_item_removed', 'values_changed'])
 DEFAULT_PARAMTERS = OrderedSet([
