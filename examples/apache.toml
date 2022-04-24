@@ -1,0 +1,25 @@
+# Service setup for the apache instance 
+[service.setup]
+name = ["apache2"] 
+action= ["install", "enable"]
+
+# Service restart for the apache instance 
+[service.ops]
+name = ["apache2"]
+action =["restart"]
+
+
+# Modify the directory permissions 
+[directory.list]
+name = ["/etc/apache"] 
+params = {'owner'='root','group'='root','mode'= '0755'}
+action = ['create']
+notifies = "@format {this.service.ops}"
+
+# Modify the input content of the file 
+[file.conf]
+name = ["/var/www/customers/public_html/index.php"]
+action = ["create"]
+content  = ["This is the test file"]
+params = {'owner'= 'root','group'= 'root','mode' = '0755'}
+notifies = "@format {this.service.ops}"

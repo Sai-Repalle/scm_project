@@ -12,12 +12,12 @@ import hashlib
 from deepdiff import DeepDiff
 from deepdiff.model import PrettyOrderedSet
 from json.decoder import JSONDecodeError
-from scm.defaults import JSON_DIFF_ATTR
+from scm_config.defaults import JSON_DIFF_ATTR
 from pathlib import Path
-from scm import defaults
+from scm_config import defaults
 from subprocess import STDOUT, check_call, CalledProcessError
 
-from scm import (
+from scm_config import (
     DIR_ERROR,
     FILE_ERROR,
     SUCCESS,
@@ -27,6 +27,10 @@ from scm import (
 
 CONFIG_DIR = OrderedSet(['CONFIG_DIR', 'CONFIG_HASH_DIR'])
 CONFIG_FILES = OrderedSet(['CONFIG_DEF_FILE', 'CONFIG_HASH_FILE'])
+CONFIG_DIR_PATH = os.getcwd()
+CONFIG_FILE_PATH = os.path.join(
+    CONFIG_DIR_PATH,
+    "settings.json")
 
 
 def read_json(filename):
@@ -184,7 +188,8 @@ def _hash_fun(user_dict: Dict) -> str:
 
 def _write_json(new_data, filename) -> None:
     with open(filename, 'w') as file:
-        filedata = json.load(f)
+        filedata = json.load(new_data)
+        print(filedata)
         filedata.update(new_data)
         file.seek(0)
         json.dump(filedata, file, indent=4)
@@ -265,7 +270,4 @@ def run_os_command(command) -> None:
         code = 1 
     return code 
 
-CONFIG_DIR_PATH = os.getcwd()
-CONFIG_FILE_PATH = os.path.join(
-    CONFIG_DIR_PATH,
-    "scm/settings/settings.json")
+
