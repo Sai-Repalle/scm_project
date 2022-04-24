@@ -280,7 +280,7 @@ def run_os_command(command) -> None:
             if commands[2] == ">>":
                 f = open(commands[-1], mode="a")
             else:
-                f = open(command[-1], mode="w")
+                f = open(commands[-1], mode="w")
             code = check_call(commands[:2], stderr=STDOUT, stdout=f)
         else:            
             code = check_call(commands, stderr=STDOUT) 
