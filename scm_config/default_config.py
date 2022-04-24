@@ -133,11 +133,8 @@ def gen_command(
                             output[f"{key}.{index}"].append(f"sudo apt-get {act} {n} -y")
                         else:
                             if act in defaults.SERVICE_OP_ACTIONS:
-                                if act not in ['enable', 'disable']:
-                                    output[f"{key}.{index}"].append(f"systemctl {act} {n} -force")
-                                else:
-                                    output[f"{key}.{index}"].append(f"systemctl {act} {n}")
-
+                                output[f"{key}.{index}"].append(f"systemctl {act} {n}")
+                                
     if key.upper() in ["DIRECTORY", "FILE"]:
         for index, value in settings_dict[key].items():
             output[f"{key}.{index}"] = []
