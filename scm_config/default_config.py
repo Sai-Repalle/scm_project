@@ -9,6 +9,7 @@ from dynaconf.vendor.toml.decoder import TomlDecodeError
 from ordered_set import OrderedSet
 import json
 import hashlib
+import shlex 
 from deepdiff import DeepDiff
 from deepdiff.model import PrettyOrderedSet
 from json.decoder import JSONDecodeError
@@ -72,19 +73,20 @@ def create_def_files(user_dict) -> bool:
                             user_dict['CONFIG_DIR'],
                             user_dict[key])).touch()
                 else:
-                    Path(
-                        os.path.join(
+                    hash_directory = os.path.join(
                             user_dict['CONFIG_HASH_DIR'],
-                            user_dict[key])).touch()
-                    #write empty json dict to the file 
-                    d = {}
-                    # Serializing json 
-                    json_object = json.dumps(d, indent = 4)
-                    # Writing to sample.json
-                    with open(os.path.join(
-                            user_dict['CONFIG_HASH_DIR'],
-                            user_dict[key]), "w") as outfile:
-                        outfile.write(json_object)
+                            user_dict[key])
+                    if not os.path.exists(hash_directory):
+                        Path(hash_directory).touch()
+                        #write empty json dict to the file 
+                        d = {}
+                        # Serializing json 
+                        json_object = json.dumps(d, indent = 4)
+                        # Writing to sample.json
+                        with open(os.path.join(
+                                user_dict['CONFIG_HASH_DIR'],
+                                user_dict[key]), "w") as outfile:
+                            outfile.write(json_object)
             else:
                 logging.info(f"{key} file already exists")
         else:
@@ -127,8 +129,8 @@ def gen_command(
                 for n in value['name']:
                     for act in value['action']:
                         if act in defaults.SERVICE_SETUP_ACTIONS:
-                            output[f"{key}.{index}"].append("sudo apt update")
-                            output[f"{key}.{index}"].append(f"sudo apt {act} {n} -y")
+                            output[f"{key}.{index}"].append("sudo apt-get update -y")
+                            output[f"{key}.{index}"].append(f"sudo apt-get {act} {n} -y")
                         else:
                             if act in defaults.SERVICE_OP_ACTIONS:
                                 output[f"{key}.{index}"].append(f"systemctl {act} {n} -force")
@@ -177,6 +179,16 @@ def gen_command(
                             else:
                                 output[f"{key}.{index}"].append(f"systemctl {act} {n} -force")
 
+    if key.upper() in ["FIREWALL"]:
+        for index, value in settings_dict[key].items():
+            output[f"{key}.{index}"] = []
+            for n in value['name']:
+                for act in value['action']:
+                    if act == "allow":
+                        cmd: str = f"sudo ufw {act} in {n}"
+                        output[f"{key}.{index}"].append(cmd)
+                        
+                        
     return None
 
 
@@ -209,12 +221,11 @@ def _get_diff_hash(existing_hash, curr_hash) -> List:
         res = DeepDiff(curr_hash, existing_hash)
         for i in JSON_DIFF_ATTR:
             if res.get(i, None):
-                if isinstance(res.get(i, None), PrettyOrderedSet):
-                    for split_val in res.get(i, None):
-                        first_idx = split_val.find('[')
-                        last_idx = split_val.find(']')
-                        split_val = split_val[first_idx+1:last_idx]
-                        output.append(split_val.replace("'",""))
+                for split_val in res.get(i, None):
+                    first_idx = split_val.find('[')
+                    last_idx = split_val.find(']')
+                    split_val = split_val[first_idx+1:last_idx]
+                    output.append(split_val.replace("'",""))
 
     else:
         output = (list(curr_hash.keys()))
@@ -264,7 +275,15 @@ def write_hash_config(hash_dict_set, receipe, hash_file_name):
 
 def run_os_command(command) -> None: 
     try: 
-        code = check_call(command.split(),stdout=open(os.devnull,'wb'), stderr=STDOUT) 
+        commands = shlex.split(command)
+        if commands[0] == "echo":
+            if commands[2] == ">>":
+                f = open(commands[-1], mode="a")
+            else:
+                f = open(command[-1], mode="w")
+            code = check_call(commands[:2], stderr=STDOUT, stdout=f)
+        else:            
+            code = check_call(commands, stderr=STDOUT) 
     except CalledProcessError as e:
         logging.error(str(e))
         code = 1 

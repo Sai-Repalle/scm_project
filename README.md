@@ -2,10 +2,11 @@
 Self Managed Configuration Management(SCM) is a simple command line app for configuration management, written in python.
 > Designed to run only on ubuntu operating system
 
-This tool, currently supports only three resources 
+This tool, currently supports only below resources 
 * service
 * directory
 * file 
+* firewall
 
 
 # Resource Detailed information 
@@ -137,10 +138,10 @@ Commands:
 ## initialization
 init command is used for initialization and helpful to create the respective directories, also this command is useful for expanding future versions of the scm tool
 
-`init <keyword>`
+`init`
 To start with the tool, initialize the tool without any parameters, this would set the configuration files required for tool to work
 ```bash
-$ scm init python
+$ scm init
 ```
 ### output 
 ```bash
@@ -185,15 +186,13 @@ $ scm info --receipe_name <receipe_name>
 ```bash
 $ scm validate --receipe_name <receipe_name>
 ```
-
+## diff
+`diff <name>`
+```bash
+$ scm diff --receipe_name <receipe_name>
+```
 ## push
 `push <name>`
 ```bash
 $ scm push --receipe_name <receipe_name>
-```
-
-## clean
-`clean <name>`
-```bash
-$ scm clean --receipe_name <receipe_name>
 ```
