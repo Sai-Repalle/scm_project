@@ -177,7 +177,7 @@ def gen_command(
                             if act == "install":
                                 output[f"{key}.{index}"].append(f"apt-get {act} {n} -y")
                             else:
-                                output[f"{key}.{index}"].append(f"systemctl {act} {n} -force")
+                                output[f"{key}.{index}"].append(f"systemctl {act} {n}")
 
     if key.upper() in ["FIREWALL"]:
         for index, value in settings_dict[key].items():
