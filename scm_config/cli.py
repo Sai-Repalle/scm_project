@@ -235,7 +235,8 @@ def validate(
                             logging.warning(
                                 f"`{val}` not supported in action attribute in resource {res} in receipe {receipe}"
                             )
-
+                            raise typer.Exit()
+                
                 else:
                     if res.upper() in ["FILE", "DIRECTORY"]:
                         for val in user_values:
@@ -243,6 +244,15 @@ def validate(
                                 logging.warning(
                                     f"`{val}` not supported in action attribute in resource {res} in receipe {receipe}"
                                 )
+                                raise typer.Exit()
+                
+                    if res.upper() in ["FIREWALL"]:
+                        for val in user_values:
+                            if val not in defaults.FIREWALL_ACTIONS:
+                                logging.warning(
+                                    f"`{val}` not supported in action attribute in resource {res} in receipe {receipe}"
+                                )
+                                raise typer.Exit()
 
     logging.info(
         f"{receipe} receipe file is valid for push, use `scm push` to push the file")
@@ -285,26 +295,27 @@ def push_command(receipe) -> tuple:
     diff_output = _get_diff_hash(existing_hash[receipe],write_dict[receipe])
     print(diff_output)
       
-    return (diff_output, curr_resouces)
+    return (diff_output, curr_resouces, write_dict)
 
 
 @app.command()
 def push(
     receipe: str = typer.Option(...)
 ) -> None:
-    
-    output, curr_resources = push_command(receipe)
+    diff_output, curr_resources, new_hash_dict = push_command(receipe)
     
     logging.info("Following resources will be applied:")
-    for cmd in output: 
+    for cmd in diff_output: 
         if cmd in  curr_resources[receipe]:       
             logging.info(f"{cmd}: {curr_resources[receipe][cmd]}")
-            for c in cmd: 
-                logging.info(f"Applying the command {c}")
+            for c in curr_resources[receipe][cmd]: 
+                logging.info(f"Applying the command `{c}`")
                 code = run_os_command(c)
                 if code:
                     logging.error(f"Failed to run the command {c}")
                     raise typer.Exit()
+    # saving the configuration into hash format 
+    #_write_json(new_hash_dict, )
 
     return 0
 

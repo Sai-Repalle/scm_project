@@ -2,10 +2,11 @@
 Self Managed Configuration Management(SCM) is a simple command line app for configuration management, written in python.
 > Designed to run only on ubuntu operating system
 
-This tool, currently supports only three resources 
+This tool, currently supports only below resources 
 * service
 * directory
 * file 
+* firewall
 
 
 # Resource Detailed information 

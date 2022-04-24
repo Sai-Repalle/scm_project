@@ -9,6 +9,7 @@ from dynaconf.vendor.toml.decoder import TomlDecodeError
 from ordered_set import OrderedSet
 import json
 import hashlib
+import shlex 
 from deepdiff import DeepDiff
 from deepdiff.model import PrettyOrderedSet
 from json.decoder import JSONDecodeError
@@ -127,8 +128,8 @@ def gen_command(
                 for n in value['name']:
                     for act in value['action']:
                         if act in defaults.SERVICE_SETUP_ACTIONS:
-                            output[f"{key}.{index}"].append("sudo apt update")
-                            output[f"{key}.{index}"].append(f"sudo apt {act} {n} -y")
+                            output[f"{key}.{index}"].append("sudo apt-get update -y")
+                            output[f"{key}.{index}"].append(f"sudo apt-get {act} {n} -y")
                         else:
                             if act in defaults.SERVICE_OP_ACTIONS:
                                 output[f"{key}.{index}"].append(f"systemctl {act} {n} -force")
@@ -177,6 +178,16 @@ def gen_command(
                             else:
                                 output[f"{key}.{index}"].append(f"systemctl {act} {n} -force")
 
+    if key.upper() in ["FIREWALL"]:
+        for index, value in settings_dict[key].items():
+            output[f"{key}.{index}"] = []
+            for n in value['name']:
+                for act in value['action']:
+                    if act == "allow":
+                        cmd: str = f"sudo ufw {act} in {n}"
+                        output[f"{key}.{index}"].append(cmd)
+                        
+                        
     return None
 
 
@@ -264,7 +275,8 @@ def write_hash_config(hash_dict_set, receipe, hash_file_name):
 
 def run_os_command(command) -> None: 
     try: 
-        code = check_call(command.split(),stdout=open(os.devnull,'wb'), stderr=STDOUT) 
+        commands = shlex.split(command)
+        code = check_call(commands, stderr=STDOUT) 
     except CalledProcessError as e:
         logging.error(str(e))
         code = 1 
