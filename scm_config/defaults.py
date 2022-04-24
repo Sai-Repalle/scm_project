@@ -6,7 +6,7 @@ SERVICE_SETUP_ACTIONS = OrderedSet(["install", "enable", "disable"])
 SERVICE_OP_ACTIONS = OrderedSet(
     ["stop", "start", "restart", "reload", "disable", "enable"])
 DIR_FILE_ACTIONS = OrderedSet(['create'])
-FIREWALL_ACTIONS = OrderedSet('allow')
+FIREWALL_ACTIONS = OrderedSet(['allow'])
 RES_ATTRIBUTES = OrderedSet(['name', 'action'])
 SRV_ATTRIBUTES = OrderedSet(['name', 'action', 'notifies'])
 DIR_ATTRIBUTES = OrderedSet(['params', 'notifies'])
