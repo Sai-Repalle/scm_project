@@ -286,7 +286,7 @@ def push_command(receipe) -> tuple:
     
     for index,value in curr_resouces[receipe].items():
         concat = functools.reduce(lambda x, y: x + y, value, "")
-        write_dict[receipe][index] = hashlib.md5(concat.encode("utf-8")).hexadigest()
+        write_dict[receipe][index] = hashlib.md5(concat.encode("utf-8")).hexdigest()
     
     existing_hash = read_json(hash_config_dir)
     
