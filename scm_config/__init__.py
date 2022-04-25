@@ -2,7 +2,7 @@
 # scm/__init__.py
 
 __app_name__ = "scm"
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 (
  SUCCESS, 
