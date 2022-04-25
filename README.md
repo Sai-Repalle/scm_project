@@ -9,13 +9,15 @@ This tool, currently supports below resources
 * firewall
 >A resource definition in scm is directly related to the action of standard linux commands, example. service, directories, files.
 
->pre-requisites install python3 environment on the machine
+>pre-requisites install python 3.6 & above environment on the machine
 
 # Installation
-```bash 
+```bash
+sudo apt-get update
+sudo apt-get install python3.8 -y
 mkdir -p /root/scm
 cd /root/scm
-pip install scm-config
+pip3 install scm-config
 scm -v 
 ```
 # Usage
