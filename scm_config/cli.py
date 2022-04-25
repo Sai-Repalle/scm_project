@@ -1,407 +1,386 @@
-"""Module provides the CLI package"""
-# scm/cli.py
-import os
-import logging
-from scm_config.defaults import SETTINGS_DATA
-from typing import Optional
-from ordered_set import OrderedSet
-import typer
-import hashlib
-import functools
-from scm_config import __version__, __app_name__, default_config
-from scm_config.default_config import read_json, create_def_directory, create_def_files,check_if_receipe_exists, get_user_settings, get_user_defined_resources, validate_unsupported_resources, gen_command, run_os_command,_get_diff_hash, del_receipe_file
-from dynaconf.utils.boxing import DynaBox
-from collections import OrderedDict
-from scm_config import defaults
-import json
+# SCM
+Self Managed Configuration Management(SCM) is a simple command line app for configuration management, written in python.
+> Designed to run only on ubuntu operating system
 
-# BASIC LOGGING MESSAGE
-logging.basicConfig(format='[%(levelname)s][%(asctime)s]::%(message)s',
-                    datefmt="%m-%d-%Y %H:%M:%S", level=logging.INFO)
-logger = logging.getLogger()
+This tool, currently supports below resources 
+* service
+* directory
+* file 
+* firewall
+>A resource definition in scm is directly related to the action of standard linux commands, example. service, directories, files.
 
-# Global variables
-def_settings_dict = {}
+>pre-requisites install python 3.6 & above environment on the machine
 
-app = typer.Typer()
+# Installation
+```bash
+sudo apt-get update
+sudo apt-get install python3.8 -y
+mkdir -p /root/scm
+cd /root/scm
+pip3 install scm-config
+scm -v 
+```
+# Usage
+```bash
+Usage: scm [OPTIONS] COMMAND [ARGS]...
 
+Options:
+  -v, --version                   Display''s the application version
+  --install-completion [bash|zsh|fish|powershell|pwsh]
+                                  Install completion for the specified shell.
+  --show-completion [bash|zsh|fish|powershell|pwsh]
+                                  Show completion for the specified shell, to
+                                  copy it or customize the installation.
+  --help                          Show this message and exit.
 
-def _version(value: bool) -> None:
-    if value:
-        typer.echo(f"{__app_name__} - v{__version__}")
-        raise typer.Exit()
-
-
-@app.command()
-def init(
-    file: str = typer.Option(
-        str(default_config.CONFIG_FILE_PATH),
-        "--default-file",
-        "-f"
-    )
-) -> None:
-    global def_settings_dict
-     
-    with open(file, "w") as outfile:
-        json.dump(SETTINGS_DATA, outfile)
-    
-    
-    def_settings_dict = read_json(file)['default']
-
-    os.environ['ROOT_PATH_FOR_DYNACONF'] = def_settings_dict.get(
-        'CONFIG_DIR', os.path.join(os.getcwd(), "config"))
-
-    is_dir_created = create_def_directory(def_settings_dict)
-
-    if not is_dir_created:
-        logging.warning("default directories creation failed")
-        raise typer.Exit()
-
-    is_files_created = create_def_files(def_settings_dict)
-
-    if not is_files_created:
-        logging.warning("default files creation failed")
-        raise typer.Exit()
-
-    
-    return 0
-
-# create command
+Commands:
+  create
+  diff
+  info
+  init
+  push
+  remove
+  validate
+```
+>> scm creates two directories in the root directory during the "init" command, for example "/root/scm", one is for storing the receipe configuration and other one is for maintaining the configuration in the hash format, this mechanism provides the scm to run any number of times without worrying about the failures.
 
 
-@app.command()
-def create(
-    receipe: str = typer.Option(...),
-    force: bool = typer.Option(False)
-) -> None:
+# Commands overview 
 
-    init(default_config.CONFIG_FILE_PATH)
-    con_dir, def_file = def_settings_dict.get('CONFIG_DIR'), f"{receipe}.toml"
-    con_dir_full = os.path.join(os.getcwd(), con_dir)
-    def_file_full = os.path.join(con_dir_full, def_file)
-    
-    
+| command  | command description                                                                                                                      | usage                                                               | Example                                           |   |
+|----------|------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|---------------------------------------------------|---|
+| init     | Used for initialization, creates necessary files and directories for the tool to store configuration.                                                                        | scm init                                                            |                                                   |   |
+| create   | Creates the receipe .toml file in the config directory based on the receipe name                                                         | scm create --receipe <name>                                         | scm create --receipe apache                       |   |
+| validate | Validates the receipe file configuration based on the standard defined resources                                                         | scm validate --receipe <name>                                       | scm validate --receipe apache                     |   |
+| info     | Lists the configurations that are defined in the receipe file                                                                            | scm info --receipe <name>                                           | scm info --receipe apache                         |   |
+| diff     | Lists the differences between the existing and the current configuration, if this is this is new receipe, outputs all the configurations | scm diff --receipe <name>                                           | scm diff --receipe apache                         |   |
+| push     | Pushes the configuration defined in the receipe file to the operating system and stores the configuration in config_hash_directory       | scm push --receipe <name>                                           | scm push --receipe apache                         |   |
+| remove   | Removes the configuration from the hash directory and also removes the receipe file from the config directory                            | scm push --receipe <name> [optional --force [optional --clean-files | scm remove --receipe apache --force --clean-files |   |
 
-    if not check_if_receipe_exists(receipe) or force:
-        with open(def_file_full, mode="w") as f:
-            f.write(f"# Place holder for creating the scm {receipe} receipe")
-    else:
-        logging.warning(
-            f"`{receipe}` configuration file exists, use --force to override.")
-        raise typer.Exit()
+#
+# Resource Detailed information 
+## Service 
+Service resource is useful for installing and managing packages from the linux repository, 
+> Note that currently this tool is designed to support only on Ubuntu Operating System
 
-    
-    
-    return 0
+***Name parameter in the below section is a list format, meaning it can take multiple values and the actions and other parameters are applied to each name resource accordingly**
+### Example 
+```
+[service.setup]
+name = ["apache2"] 
+action= ["install", "enable"]
+```
+In the above example, "service" is the resource and "setup" is the service identifier. 
+* name  -> Name of the service that is to be installed on the ubuntu system 
+* action -> Action to be done on the listed service, currently these are only supported 
+> ["install", "enable", "disable"]
 
+```
+[service.ops]
+name = ["apache2"]
+action =["restart"]
+```
+In the above example, "service" is the resource and "ops" is the service identifier. once the service is installed and service operations can be done using this tool. 
+* name  -> Name of the service that is to be installed on the ubuntu system 
+* action -> Action to be done on the listed service, currently these are only supported 
+> ["stop", "start", "restart", "reload", "disable", "enable"]
 
-@app.command()
-def info(
-    receipe: str = typer.Option(...)
-) -> None:
+## Directory
+Directory resource is useful for installing and managing the metadata directories on the system, 
+> Note that currently this resource is tested only on Ubuntu Operating System, but can run on any Linux Operating System
 
-    init(default_config.CONFIG_FILE_PATH)
-    con_dir, def_file = def_settings_dict.get('CONFIG_DIR'), f"{receipe}.toml"
-    con_dir_full = os.path.join(os.getcwd(), con_dir)
-    def_file_full = os.path.join(con_dir_full, def_file)
+### Example 
+```
+# Modify the directory permissions 
+[directory.list]
+name = ["/etc/apache"] 
+params = {'owner'='root','group'='root','mode'= '0755'}
+action = ['create']
+notifies = "@format {this.service.ops}"
+```
+In the above example, "directory" is the resource and "list" is the service identifier. 
+* name  -> Name of the directory where the metadata needs modification including creation of the directory using the action method
+* params -> parameter to support the directory operations, currently ['owner', 'group' and 'mode'] are supported in the list 
+* action -> Action to be done on the listed service, currently for directories only ['create'] is supported
+* notifies -> Parameter to notify any other resource in the same recipe file, In example, notifies the service ops resources, that would restart the apache2 service based on the modifications 
+> ["install", "enable", "disable"]
 
-    if not check_if_receipe_exists(receipe):
-        logging.warning(
-            f"receipe {receipe} doesn't exist in the config directory")
-        logging.warning("use `scm create` for the receipe creation")
-        raise typer.Exit()
+## File
+File resource is useful for managing the metadata and the content on the linux file system, 
+> Note that currently this resource is tested only on Ubuntu Operating System, but can run on any Linux Operating System
 
-    user_settings = get_user_settings(receipe)
-    user_resources = get_user_defined_resources(user_settings)
+### Example 
+```
+# Modify the input content of the file 
+[file.conf]
+name = ["/var/www/customers/public_html/index.php"]
+action = ["create"]
+override ="true"
+content  = ["This is the test file"]
+params = {'owner'= 'root','group'= 'root','mode' = '0755'}
+notifies = "@format {this.service.ops}"
 
-    for res in user_resources:
-        if res in user_settings:
-            for i in user_settings[res]:
-                logging.info(f"{res}.{i} - {user_settings[res][i]}")
-
-    return 0
-
-# validate command
-
-
-@app.command()
-def validate(
-    receipe: str = typer.Option(...)
-) -> None:
-
-    init(default_config.CONFIG_FILE_PATH)
-    con_dir, def_file = def_settings_dict.get('CONFIG_DIR'), f"{receipe}.toml"
-    con_dir_full = os.path.join(os.getcwd(), con_dir)
-    def_file_full = os.path.join(con_dir_full, def_file)
-
-    if not check_if_receipe_exists(receipe):
-        logging.warning(
-            f"receipe {receipe} doesn't exist in the config directory")
-        logging.warning("use `scm create` for the receipe creation")
-        raise typer.Exit()
-
-    res_validation = validate_unsupported_resources(get_user_settings(receipe))
-
-    if res_validation:
-        logging.warning(
-            f"Unsupported resources found in the `{receipe}` configuration file"
-        )
-        for i in res_validation:
-            logging.warning(
-                f"`{i}` resource in {receipe} receipe isn't supported")
-            raise typer.Exit()
-
-    user_settings = get_user_settings(receipe)
-    user_resources = get_user_defined_resources(user_settings)
-
-    if not user_resources:
-        logging.warning(
-            f"No user resources found in the `{receipe}` configuration file")
-        raise typer.Exit()
-
-    for res in user_resources:
-        if res in user_settings:
-            for i in user_settings[res]:
-
-                if not isinstance(user_settings[res][i], DynaBox):
-                    logging.warning(
-                        f"Missing subconfig `{res}` resource in {receipe} receipe"
-                    )
-                    raise typer.Exit()
-
-                if not user_settings[res][i].get('name', None):
-                    logging.warning(
-                        f"Missing `name`attributes in resource `{i}` in receipe {receipe}"
-                    )
-                    raise typer.Exit()
-
-                if not user_settings[res][i].get('action', None):
-                    logging.warning(
-                        f"Missing `action` attributes in resource `{i}` in receipe {receipe}"
-                    )
-                    raise typer.Exit()
-
-                defaults.UNSUPPORTED_ATTR = OrderedSet(
-                    user_settings[res][i].keys()) - defaults.RES_ATTRIBUTES
-
-                if (defaults.UNSUPPORTED_ATTR -
-                        defaults.SRV_ATTRIBUTES) and res.upper() == "SERVICE":
-                    logging.warning(
-                        f"Found one more attributes that aren't supported"
-                    )
-                    for unsup in (
-                            defaults.UNSUPPORTED_ATTR -
-                            defaults.SRV_ATTRIBUTES):
-                        logging.warning(
-                            f"`{unsup}` not supported attribute in resource {res} in receipe {receipe}"
-                        )
-                    raise typer.Exit()
-
-                if (defaults.UNSUPPORTED_ATTR -
-                        defaults.DIR_ATTRIBUTES) and res.upper() == "DIRECTORY":
-                    logging.warning(
-                        f"Found one more attributes that aren't supported"
-                    )
-                    for unsup in (
-                            defaults.UNSUPPORTED_ATTR -
-                            defaults.DIR_ATTRIBUTES):
-                        logging.warning(
-                            f"`{unsup}` not supported attribute in resource {res} in receipe {receipe}"
-                        )
-                    raise typer.Exit()
-
-                if (defaults.UNSUPPORTED_ATTR -
-                        defaults.FILE_ATTRIBUTES) and res.upper() == "FILE":
-                    logging.warning(
-                        f"Found one more attributes that aren't supported"
-                    )
-                    for unsup in (
-                            defaults.UNSUPPORTED_ATTR -
-                            defaults.FILE_ATTRIBUTES):
-                        logging.warning(
-                            f"`{unsup}` not supported attribute in resource {res} in receipe {receipe}"
-                        )
-                    raise typer.Exit()
-
-                # now validate the values from the user-input string
-                user_values = user_settings[res][i].get('action', None)
-                if res.upper() == "SERVICE":
-                    for val in user_values:
-                        if val not in defaults.SERVICE_SETUP_ACTIONS.union(
-                                defaults.SERVICE_OP_ACTIONS):
-                            logging.warning(
-                                f"`{val}` not supported in action attribute in resource {res} in receipe {receipe}"
-                            )
-                            raise typer.Exit()
-                
-                else:
-                    if res.upper() in ["FILE", "DIRECTORY"]:
-                        for val in user_values:
-                            if val not in defaults.DIR_FILE_ACTIONS:
-                                logging.warning(
-                                    f"`{val}` not supported in action attribute in resource {res} in receipe {receipe}"
-                                )
-                                raise typer.Exit()
-                
-                    if res.upper() in ["FIREWALL"]:
-                        for val in user_values:
-                            if val not in defaults.FIREWALL_ACTIONS:
-                                logging.warning(
-                                    f"`{val}` not supported in action attribute in resource {res} in receipe {receipe}"
-                                )
-                                raise typer.Exit()
-
-    logging.info(
-        f"{receipe} receipe file is valid for push, use `scm diff` to differences with the existing configuration")
-    return 0
-
-def push_command(receipe) -> tuple:
-    
-    curr_resouces = OrderedDict()
-
-    settings = read_json(default_config.CONFIG_FILE_PATH)['default']
-
-    os.environ['ROOT_PATH_FOR_DYNACONF'] = settings.get(
-        'CONFIG_DIR', os.path.join(os.getcwd(), "config"))
-
-    hash_config_dir = os.path.join(
-        settings.get('CONFIG_HASH_DIR'),
-        settings.get('CONFIG_HASH_FILE'))
-
-    validate(receipe)
-
-    user_settings = get_user_settings(receipe)
-    user_resources = get_user_defined_resources(user_settings)
-    
-    curr_resouces[receipe] = {}   
-    for i in user_resources:
-        gen_command(user_settings, i, curr_resouces[receipe])
-    
-    write_dict = {}
-    write_dict[receipe] = {}
-    
-    for index,value in curr_resouces[receipe].items():
-        concat = functools.reduce(lambda x, y: x + y, value, "")
-        write_dict[receipe][index] = hashlib.md5(concat.encode("utf-8")).hexdigest()
-    
-    existing_hash = read_json(hash_config_dir)
-    
-    if not existing_hash:
-        existing_hash[receipe] = {}
-    
-    diff_output = _get_diff_hash(existing_hash[receipe],write_dict[receipe])
-      
-    return (diff_output, curr_resouces, write_dict)
+```
+In the above example, "file" is the resource and "conf" is the service identifier. 
+* name  -> Name of the file where the content need to be added or appended based on the configuration requirement
+* action -> Action to be done on the listed service, currently for file only ['create'] is supported
+* override -> This parameter will override if there is any existing file, default it will append the content to the file 
+* content -> Input content for the file provide in the form the double quotes. For simplicity ,large content is not tested with the current version of the code. 
+* params -> parameter to support the file operations, currently ['owner', 'group' and 'mode'] are supported in the list 
+* notifies -> Parameter to notify any other resource in the same recipe file, In example, notifies the service ops resources, that would restart the apache2 service based on the modifications 
+> ["install", "enable", "disable"]
 
 
-@app.command()
-def push(
-    receipe: str = typer.Option(...)
-) -> None:
-    diff_output, curr_resources, new_hash_dict = push_command(receipe)
-    
-    if not diff_output:
-        logging.info(f"`{receipe}` configuration is update to date with the existing configuration")
-        raise typer.Exit()
-    
-    
-    settings = read_json(default_config.CONFIG_FILE_PATH)['default']
-    
-    hash_config_dir = os.path.join(
-        settings.get('CONFIG_HASH_DIR'),
-        settings.get('CONFIG_HASH_FILE'))
-    
-    logging.info("Following resources will be applied:")
-    for cmd in diff_output: 
-        if cmd in  curr_resources[receipe]:       
-            logging.info(f"{cmd}: {curr_resources[receipe][cmd]}")
-            for c in curr_resources[receipe][cmd]: 
-                logging.info(f"Applying the command `{c}`")
-                code = run_os_command(c)
-                if code:
-                    logging.error(f"Failed to run the command {c}")
-                    raise typer.Exit()
-                
-    with open(hash_config_dir, "w") as output:
-        json.dump(new_hash_dict, output)
+## Firewall
+Firewall resource is useful for managing firewall rules using UFW linux command, 
+> Note that currently this resource is tested only on Ubuntu Operating System, but can run on any Linux Operating System
 
-    logging.info("Applied all the changes without any issues")
-    return 0
+### Example 
+```
+# Modify the input content of the file 
+[firewall.setup]
+name = ["Apache"]
+action=["allow"]
+```
+
+In the above example, "firewall" is the resource and "setup" is the service identifier. 
+* name  -> Name of the resource where need to allow firewall traffic
+* action -> Action to be done on the listed service, currently for file only ['allow'] is supported 
+> ["allow"]
 
 
-@app.command()
-def diff(
-    receipe: str = typer.Option(...)
-) -> None:
-    
-    output, curr_resources, new_hash_dict = push_command(receipe)
-    
-    if not output:
-        logging.info(f"`{receipe}` configuration is update to date with the existing configuration")
-    
-    for i in output: 
-        if i in  curr_resources[receipe]:
-            logging.info("Following resources will be applied:")
-            logging.info(f"{i}: {curr_resources[receipe][i]}")    
-        
-    return 0
+# Complete overview of the example file 
 
-@app.command()
-def remove(
-    receipe: str = typer.Option(...), 
-    force: bool = False, 
-    clean_files: bool = False 
-) -> None:
-    
-    settings = read_json(default_config.CONFIG_FILE_PATH)['default']
+```toml
+# Service setup for the apache instance 
+[service.setup]
+name = ["apache2"] 
+action= ["install", "enable"]
 
-    os.environ['ROOT_PATH_FOR_DYNACONF'] = settings.get(
-        'CONFIG_DIR', os.path.join(os.getcwd(), "config"))
+# Service restart for the apache instance 
+[service.ops]
+name = ["apache2"]
+action =["restart"]
 
-    hash_config_dir = os.path.join(
-        settings.get('CONFIG_HASH_DIR'),
-        settings.get('CONFIG_HASH_FILE'))
+[firewall.setup]
+name = ["Apache"]
+action=["allow"]
 
-    validate(receipe)
-    
-    if force: 
-        logging.info(f"This configuration removes the receipe `{receipe}`")
-        logging.info(f"Please set the flag to force `--force` to remove the configuration")
-        raise typer.Exit()
-    
-    if not clean_files:
-        logging.info("Configuration doesn't remove the receipe file, please clean up manually")
-    
-    with open(hash_config_dir) as data_file:
-        data = json.load(data_file)
-    
-    if not data.get(receipe, None):
-        logging.warning(f"`receipe`configuration not found in the hash dataset")
-        raise typer.Exit()
-    
-    del data[receipe]
-    
-    with open(hash_config_dir, "w") as data_file:
-        data = json.dump(data, data_file)    
-    
-    if clean_files and check_if_receipe_exists(receipe):
-        logging.info("dropping the receipe file..")
-        del_receipe_file(receipe)
-        
-         
-    return 0
+# Modify the directory permissions 
+[directory.list]
+name = ["/etc/apache"] 
+params = {'owner'='root','group'='root','mode'= '0755'}
+action = ['create']
+notifies = "@format {this.service.ops}"
+
+# Modify the input content of the file 
+[file.conf]
+name = ["/var/www/customers/public_html/index.php"]
+action = ["create"]
+content  = ["This is the test file"]
+params = {'owner'= 'root','group'= 'root','mode' = '0755'}
+notifies = "@format {this.service.ops}"
+```
+# Installation and Usage # 
+
+## Manual clone
+```bash
+  $ git clone https://github.com/Sai-Repalle/scm_project
+  $ cd scm_project
+  $ python3 -m venv venv 
+  $ source venv/bin/activate
+  $ pip install -r requirements.txt 
+```
+
+## initialization
+init command is used for initialization and helpful to create the respective directories, also this command is useful for expanding future versions of the scm tool
+
+`init`
+Initialize the tool without any parameters, this would set the configuration files required for tool to work
+```bash
+$ scm init
+```
+### output 
+```bash   
+scm init
+[INFO][04-22-2022 06:08:13]::Reading the Json configuration /root/scm/scm/settings/settings.json
+[INFO][04-22-2022 06:08:13]::creating directory CONFIG_DIR
+[INFO][04-22-2022 06:08:13]::creating directory CONFIG_HASH_DIR
+[INFO][04-22-2022 06:08:13]::creating files CONFIG_DEF_FILE
+[INFO][04-22-2022 06:08:13]::creating files CONFIG_HASH_FILE
+
+```
+## create
+`create <name>`
+```bash
+$ scm create --receipe <receipe>
+```
+Below example, will create a receipe called "apache" and `apache.toml` file is created in the config directory located at the root directory of the scm 
+### output 
+```bash
+scm create --receipe apache
+[INFO][04-22-2022 06:09:56]::Reading the Json configuration /root/scm/scm/settings/settings.json
+[INFO][04-22-2022 06:09:56]::creating directory CONFIG_DIR
+[INFO][04-22-2022 06:09:56]::CONFIG_DIR directory already exists
+[INFO][04-22-2022 06:09:56]::creating directory CONFIG_HASH_DIR
+[INFO][04-22-2022 06:09:56]::CONFIG_HASH_DIR directory already exists
+[INFO][04-22-2022 06:09:56]::creating files CONFIG_DEF_FILE
+[INFO][04-22-2022 06:09:56]::creating files CONFIG_HASH_FIL
+```
 
 
+## info
+`info --receipe <name>`
+```bash
+$ scm info --receipe <receipe>
+```
+Below example, info command is listing all the resources and its actions based on the configuration defined in the receipe file.
+### output 
+```bash
+scm info --receipe apache
+[INFO][04-25-2022 02:00:37]::Reading the Json configuration /root/scm/settings.json
+[INFO][04-25-2022 02:00:37]::creating directory CONFIG_DIR
+[INFO][04-25-2022 02:00:37]::CONFIG_DIR directory already exists
+[INFO][04-25-2022 02:00:37]::creating directory CONFIG_HASH_DIR
+[INFO][04-25-2022 02:00:37]::CONFIG_HASH_DIR directory already exists
+[INFO][04-25-2022 02:00:37]::creating files CONFIG_DEF_FILE
+[INFO][04-25-2022 02:00:37]::creating files CONFIG_HASH_FILE
+[INFO][04-25-2022 02:00:37]::SERVICE.setup - {'name': ['apache2'], 'action': ['install', 'enable', 'start']}
+[INFO][04-25-2022 02:00:37]::SERVICE.ops - {'name': ['apache2'], 'action': ['restart']}
+[INFO][04-25-2022 02:00:37]::SERVICE.setup_php - {'name': ['php', 'libapache2-mod-php'], 'action': ['install']}
+[INFO][04-25-2022 02:00:37]::FIREWALL.setup - {'name': ['Apache'], 'action': ['allow']}
+[INFO][04-25-2022 02:00:37]::FILE.conf - {'name': ['/var/www/html/index.php'], 'action': ['create'], 'override': 'true', 'content': ['<?php\n header("Content-Type: text/plain");\n echo "Hello, world!\n";\n'], 'params': {'owner': 'root', 'group': 'root', 'mode': '0755'}, 'notifies': "{'name': ['apache2'], 'action': ['restart']}"}
+[INFO][04-25-2022 02:00:37]::FILE.phpindex - {'name': ['/etc/apache2/mods-enabled/dir.conf'], 'action': ['create'], 'override': 'true', 'content': ['<IfModule mod_dir.c>\n DirectoryIndex index.php index.html index.cgi index.pl index.xhtml index.htm </IfModule>'], 'params': {'owner': 'root', 'group': 'root', 'mode': '0755'}, 'notifies': "{'name': ['apache2'], 'action': ['restart']}"}
+```
 
-@app.callback()
-def main(
-    version: Optional[bool] = typer.Option(
-        None,
-        "--version",
-        "-v",
-        help="Display's the application version",
-        callback=_version,
-        is_eager=True,
-    )
-) -> None:
-    return 0
+## validate
+`validate -receipe <name>`
+```bash
+$ scm validate --receipe <receipe>
+```
+Below example, validate command is validating all the resources and its actions based on the configuration defined in the receipe file, If all the resources and its configurations are in valid state, receipe would output to do next step, if there are any issues, please refere to the documentation.
+### output  
+```bash
+scm validate --receipe apache
+[INFO][04-25-2022 02:01:47]::Reading the Json configuration /root/scm/settings.json
+[INFO][04-25-2022 02:01:47]::creating directory CONFIG_DIR
+[INFO][04-25-2022 02:01:47]::CONFIG_DIR directory already exists
+[INFO][04-25-2022 02:01:47]::creating directory CONFIG_HASH_DIR
+[INFO][04-25-2022 02:01:47]::CONFIG_HASH_DIR directory already exists
+[INFO][04-25-2022 02:01:47]::creating files CONFIG_DEF_FILE
+[INFO][04-25-2022 02:01:47]::creating files CONFIG_HASH_FILE
+[INFO][04-25-2022 02:01:47]::apache receipe file is valid for push, use `scm diff` to differences with the existing configuration
+```
+
+## diff
+`diff -receipe <name>`
+```bash
+$ scm diff --receipe <receipe>
+```
+In the below example, if the confiugration in the receipe file is already appplied, scm would output that the configuration is update to date with the existing configuration 
+```bash
+[INFO][04-25-2022 02:05:00]::Reading the Json configuration /root/scm/settings.json
+[INFO][04-25-2022 02:05:00]::Reading the Json configuration /root/scm/settings.json
+[INFO][04-25-2022 02:05:00]::creating directory CONFIG_DIR
+[INFO][04-25-2022 02:05:00]::CONFIG_DIR directory already exists
+[INFO][04-25-2022 02:05:00]::creating directory CONFIG_HASH_DIR
+[INFO][04-25-2022 02:05:00]::CONFIG_HASH_DIR directory already exists
+[INFO][04-25-2022 02:05:00]::creating files CONFIG_DEF_FILE
+[INFO][04-25-2022 02:05:00]::creating files CONFIG_HASH_FILE
+[INFO][04-25-2022 02:05:00]::apache receipe file is valid for push, use `scm diff` to differences with the existing configuration
+[INFO][04-25-2022 02:05:00]::Reading the Json configuration config_hash/hash_config_md5.json
+[INFO][04-25-2022 02:05:00]::`apache` configuration is update to date with the existing configuration
+```
+In the below example, if the configuration in the receipe file is pushed to the operating system to install the required services 
+```bash
+root@ip-172-31-255-140:~/scm/config# scm diff --receipe apache_remove
+[INFO][04-25-2022 02:20:37]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:20:37]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:20:37]::creating directory CONFIG_DIR
+[INFO][04-25-2022 02:20:37]::CONFIG_DIR directory already exists
+[INFO][04-25-2022 02:20:37]::creating directory CONFIG_HASH_DIR
+[INFO][04-25-2022 02:20:37]::CONFIG_HASH_DIR directory already exists
+[INFO][04-25-2022 02:20:37]::creating files CONFIG_DEF_FILE
+[INFO][04-25-2022 02:20:37]::CONFIG_DEF_FILE file already exists
+[INFO][04-25-2022 02:20:37]::creating files CONFIG_HASH_FILE
+[INFO][04-25-2022 02:20:37]::apache_remove receipe file is valid for push, use `scm diff` to differences with the existing configuration
+[INFO][04-25-2022 02:20:37]::Reading the Json configuration config_hash/hash_config_md5.json
+[INFO][04-25-2022 02:20:37]::Following resources will be applied:
+[INFO][04-25-2022 02:20:37]::SERVICE.setup: ['systemctl stop apache2', 'systemctl disable apache2', 'sudo apt-get update -y', 'sudo apt-get remove apache2 -y']
+[INFO][04-25-2022 02:20:37]::Following resources will be applied:
+[INFO][04-25-2022 02:20:37]::SERVICE.setup_php: ['sudo apt-get update -y', 'sudo apt-get remove php -y', 'sudo apt-get update -y', 'sudo apt-get remove libapache2-mod-php -y']
+```
+## push
+`push -receipe <name>`
+```bash
+$ scm push --receipe <receipe>
+```
+In the below example, scm push is pushing hte receipe named "apache_remove" and the subsequent commands are being run on the operating to the remove the services 
+### output
+```bash
+root@ip-172-31-255-140:~/scm/config# scm push  --receipe apache_remove
+[INFO][04-25-2022 02:21:34]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:21:34]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:21:34]::creating directory CONFIG_DIR
+[INFO][04-25-2022 02:21:34]::CONFIG_DIR directory already exists
+[INFO][04-25-2022 02:21:34]::creating directory CONFIG_HASH_DIR
+[INFO][04-25-2022 02:21:34]::CONFIG_HASH_DIR directory already exists
+[INFO][04-25-2022 02:21:34]::creating files CONFIG_DEF_FILE
+[INFO][04-25-2022 02:21:34]::CONFIG_DEF_FILE file already exists
+[INFO][04-25-2022 02:21:34]::creating files CONFIG_HASH_FILE
+[INFO][04-25-2022 02:21:34]::apache_remove receipe file is valid for push, use `scm diff` to differences with the existing configuration
+[INFO][04-25-2022 02:21:34]::Reading the Json configuration config_hash/hash_config_md5.json
+[INFO][04-25-2022 02:21:34]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:21:34]::Following resources will be applied:
+[INFO][04-25-2022 02:21:34]::SERVICE.setup: ['systemctl stop apache2', 'systemctl disable apache2', 'sudo apt-get update -y', 'sudo apt-get remove apache2 -y']
+[INFO][04-25-2022 02:21:34]::Applying the command `systemctl stop apache2`
+[INFO][04-25-2022 02:21:35]::Applying the command `systemctl disable apache2`
+Synchronizing state of apache2.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install disable apache2
+[INFO][04-25-2022 02:21:35]::Applying the command `sudo apt-get update -y`
+Hit:1 http://us-east-1.ec2.archive.ubuntu.com/ubuntu bionic InRelease
+Get:2 http://us-east-1.ec2.archive.ubuntu.com/ubuntu bionic-updates InRelease [88.7 kB]
+Get:3 http://us-east-1.ec2.archive.ubuntu.com/ubuntu bionic-backports InRelease [74.6 kB]
+Get:4 http://security.ubuntu.com/ubuntu bionic-security InRelease [88.7 kB]
+Fetched 252 kB in 0s (666 kB/s)
+Reading package lists... Done
+[INFO][04-25-2022 02:21:42]::Applying the command `sudo apt-get remove apache2 -y`
+Reading package lists... Done
+Building dependency tree
+Reading state information... Done
+The following packages were automatically installed and are no longer required:
+  apache2-data apache2-utils ssl-cert
+Use 'sudo apt autoremove' to remove them.
+The following packages will be REMOVED:
+  apache2
+0 upgraded, 0 newly installed, 1 to remove and 2 not upgraded.
+After this operation, 537 kB disk space will be freed.
+(Reading database ... 94525 files and directories currently installed.)
+Removing apache2 (2.4.29-1ubuntu4.22) ...
+Processing triggers for man-db (2.8.3-2ubuntu0.1) ...
+Processing triggers for ufw (0.36-0ubuntu0.18.04.2) ...
+Rules updated for profile 'Apache'
+
+```
+
+## remove
+`remove --receipe <name> --force <optional> --clean_files <optional>`
+```bash
+$ scm push --receipe <receipe>
+```
+In the below example, scm is removing the `apache_remove` receipe from the configuration hash directory,
+### output 
+```bash
+scm remove --receipe apache_remove
+[INFO][04-25-2022 02:33:38]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:33:38]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:33:38]::creating directory CONFIG_DIR
+[INFO][04-25-2022 02:33:38]::CONFIG_DIR directory already exists
+[INFO][04-25-2022 02:33:38]::creating directory CONFIG_HASH_DIR
+[INFO][04-25-2022 02:33:38]::CONFIG_HASH_DIR directory already exists
+[INFO][04-25-2022 02:33:38]::creating files CONFIG_DEF_FILE
+[INFO][04-25-2022 02:33:38]::CONFIG_DEF_FILE file already exists
+[INFO][04-25-2022 02:33:38]::creating files CONFIG_HASH_FILE
+[INFO][04-25-2022 02:33:38]::apache_remove receipe file is valid for push, use `scm diff` to differences with the existing configuration
+[INFO][04-25-2022 02:33:38]::Configuration doesn't remove the receipe file, please clean up manually
+```
