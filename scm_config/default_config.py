@@ -5,13 +5,10 @@ import logging
 from typing import List, Set, Dict
 from dynaconf import Dynaconf
 from dynaconf.utils.boxing import DynaBox
-from dynaconf.vendor.toml.decoder import TomlDecodeError
 from ordered_set import OrderedSet
 import json
-import hashlib
 import shlex 
 from deepdiff import DeepDiff
-from deepdiff.model import PrettyOrderedSet
 from json.decoder import JSONDecodeError
 from scm_config.defaults import JSON_DIFF_ATTR
 from pathlib import Path
@@ -101,6 +98,9 @@ def check_if_receipe_exists(receipe) -> bool:
         os.path.join(os.getcwd(), os.environ['ROOT_PATH_FOR_DYNACONF'],
                      f"{receipe}.toml"))
 
+def del_receipe_file(receipe) -> None:
+    return os.remove(os.path.join(os.getcwd(), os.environ['ROOT_PATH_FOR_DYNACONF'],
+                     f"{receipe}.toml"))
 
 def get_user_settings(receipe, validator=None, environments=True) -> Dict:
     return Dynaconf(settings_files=[f"{receipe}.toml"], validators=validator)
@@ -133,8 +133,8 @@ def gen_command(
                             output[f"{key}.{index}"].append(f"sudo apt-get {act} {n} -y")
                         else:
                             if act in defaults.SERVICE_OP_ACTIONS:
-                                output[f"{key}.{index}"].append(f"systemctl {act} {n} -force")
-
+                                output[f"{key}.{index}"].append(f"systemctl {act} {n}")
+                               
     if key.upper() in ["DIRECTORY", "FILE"]:
         for index, value in settings_dict[key].items():
             output[f"{key}.{index}"] = []
@@ -177,7 +177,7 @@ def gen_command(
                             if act == "install":
                                 output[f"{key}.{index}"].append(f"apt-get {act} {n} -y")
                             else:
-                                output[f"{key}.{index}"].append(f"systemctl {act} {n} -force")
+                                output[f"{key}.{index}"].append(f"systemctl {act} {n}")
 
     if key.upper() in ["FIREWALL"]:
         for index, value in settings_dict[key].items():
@@ -191,29 +191,6 @@ def gen_command(
                         
     return None
 
-
-
-def _hash_fun(user_dict: Dict) -> str:
-    user_dict = json.dumps(user_dict, sort_keys=True)
-    return hashlib.md5(user_dict.encode('utf-8')).hexdigest()
-
-
-def _write_json(new_data, filename) -> None:
-    with open(filename, 'w') as file:
-        filedata = json.load(new_data)
-        print(filedata)
-        filedata.update(new_data)
-        file.seek(0)
-        json.dump(filedata, file, indent=4)
-
-
-def _read_json(filename) -> Dict:
-    f = open(filename)
-    try:
-        dict_output = json.load(f)
-    except Exception as e:
-        return None
-    return dict_output 
 
 def _get_diff_hash(existing_hash, curr_hash) -> List:
     output = []
@@ -232,47 +209,6 @@ def _get_diff_hash(existing_hash, curr_hash) -> List:
         
     return output
 
-
-def get_diff_hash_res(receipe, hash_config) -> List:
-
-    user_settings = dict(get_user_settings(receipe))
-    user_resources = get_user_defined_resources(user_settings)
-    data = {f"{receipe}": []}
-    hash_dict = {}
-
-    existing_hash = _read_json(hash_config)
-
-    for res in user_resources:
-        if res in user_settings:
-            for i, value in user_settings[res].items():
-                print(value)
-                hash_val = _hash_fun(value)
-                hash_dict[f"{res}.{i}"] = hash_val
-    
-    data[f"{receipe}"] = [hash_dict]
-    print(existing_hash)
-    print(data)
-
-    diff_resources = _get_diff_hash(existing_hash, data, receipe)
-
-    return diff_resources
-
-
-# write configuration to the build hash set
-def write_hash_config(hash_dict_set, receipe, hash_file_name):
-    output = {}
-    user_settings = dict(get_user_settings(receipe))
-    user_resources = get_user_defined_resources(user_settings)
-
-    for res in user_resources:
-        if res in user_settings:
-            for key, val in user_settings[res].items():
-                valid_con = f"{res}.{key}"
-                if valid_con in hash_dict_set:
-                    output[key] = dict(val)
-    return {receipe: output}
-
-
 def run_os_command(command) -> None: 
     try: 
         commands = shlex.split(command)
@@ -280,7 +216,7 @@ def run_os_command(command) -> None:
             if commands[2] == ">>":
                 f = open(commands[-1], mode="a")
             else:
-                f = open(command[-1], mode="w")
+                f = open(commands[-1], mode="w")
             code = check_call(commands[:2], stderr=STDOUT, stdout=f)
         else:            
             code = check_call(commands, stderr=STDOUT) 

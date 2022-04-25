@@ -1,6 +1,5 @@
 """Module provides the CLI package"""
 # scm/cli.py
-from multiprocessing.dummy import current_process
 import os
 import logging
 from scm_config.defaults import SETTINGS_DATA
@@ -10,11 +9,8 @@ import typer
 import hashlib
 import functools
 from scm_config import __version__, __app_name__, default_config
-from scm_config.default_config import read_json, create_def_directory, create_def_files, get_diff_hash_res, check_if_receipe_exists, get_user_settings, get_user_defined_resources, validate_unsupported_resources, gen_command, run_os_command, _hash_fun,_get_diff_hash, _write_json
-from dynaconf import Dynaconf
+from scm_config.default_config import read_json, create_def_directory, create_def_files,check_if_receipe_exists, get_user_settings, get_user_defined_resources, validate_unsupported_resources, gen_command, run_os_command,_get_diff_hash, del_receipe_file
 from dynaconf.utils.boxing import DynaBox
-from dynaconf.vendor.toml.decoder import TomlDecodeError
-from ordered_set import OrderedSet
 from collections import OrderedDict
 from scm_config import defaults
 import json
@@ -286,7 +282,7 @@ def push_command(receipe) -> tuple:
     
     for index,value in curr_resouces[receipe].items():
         concat = functools.reduce(lambda x, y: x + y, value, "")
-        write_dict[receipe][index] = hashlib.md5(concat.encode("utf-8")).hexadigest()
+        write_dict[receipe][index] = hashlib.md5(concat.encode("utf-8")).hexdigest()
     
     existing_hash = read_json(hash_config_dir)
     
@@ -348,6 +344,52 @@ def diff(
             logging.info(f"{i}: {curr_resources[receipe][i]}")    
         
     return 0
+
+@app.command()
+def remove(
+    receipe: str = typer.Option(...), 
+    force: bool = False, 
+    clean_files: bool = False 
+) -> None:
+    
+    settings = read_json(default_config.CONFIG_FILE_PATH)['default']
+
+    os.environ['ROOT_PATH_FOR_DYNACONF'] = settings.get(
+        'CONFIG_DIR', os.path.join(os.getcwd(), "config"))
+
+    hash_config_dir = os.path.join(
+        settings.get('CONFIG_HASH_DIR'),
+        settings.get('CONFIG_HASH_FILE'))
+
+    validate(receipe)
+    
+    if force: 
+        logging.info(f"This configuration removes the receipe `{receipe}`")
+        logging.info(f"Please set the flag to force `--force` to remove the configuration")
+        raise typer.Exit()
+    
+    if not clean_files:
+        logging.info("Configuration doesn't remove the receipe file, please clean up manually")
+    
+    with open(hash_config_dir) as data_file:
+        data = json.load(data_file)
+    
+    if not data.get(receipe, None):
+        logging.warning(f"`receipe`configuration not found in the hash dataset")
+        raise typer.Exit()
+    
+    del data[receipe]
+    
+    with open(hash_config_dir, "w") as data_file:
+        data = json.dump(data, data_file)    
+    
+    if clean_files and check_if_receipe_exists(receipe):
+        logging.info("dropping the receipe file..")
+        del_receipe_file(receipe)
+        
+         
+    return 0
+
 
 
 @app.callback()
