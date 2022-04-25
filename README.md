@@ -14,7 +14,7 @@ This tool, currently supports below resources
 # Installation
 ```bash
 sudo apt-get update
-sudo apt-get install python3.8 -y
+sudo apt-get install python3.8 python3-pip -y
 mkdir -p /root/scm
 cd /root/scm
 pip3 install scm-config
