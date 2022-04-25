@@ -333,3 +333,20 @@ Rules updated for profile 'Apache'
 `remove --receipe <name> --force <optional> --clean_files <optional>`
 ```bash
 $ scm push --receipe <receipe>
+```
+In the below example, scm is removing the `apache_remove` receipe from the configuration hash directory,
+### output 
+```bash
+scm remove --receipe apache_remove
+[INFO][04-25-2022 02:33:38]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:33:38]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:33:38]::creating directory CONFIG_DIR
+[INFO][04-25-2022 02:33:38]::CONFIG_DIR directory already exists
+[INFO][04-25-2022 02:33:38]::creating directory CONFIG_HASH_DIR
+[INFO][04-25-2022 02:33:38]::CONFIG_HASH_DIR directory already exists
+[INFO][04-25-2022 02:33:38]::creating files CONFIG_DEF_FILE
+[INFO][04-25-2022 02:33:38]::CONFIG_DEF_FILE file already exists
+[INFO][04-25-2022 02:33:38]::creating files CONFIG_HASH_FILE
+[INFO][04-25-2022 02:33:38]::apache_remove receipe file is valid for push, use `scm diff` to differences with the existing configuration
+[INFO][04-25-2022 02:33:38]::Configuration doesn\'t remove the receipe file, please clean up manually
+```
