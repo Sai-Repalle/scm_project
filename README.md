@@ -19,7 +19,7 @@ pip install scm-config
 Usage: scm [OPTIONS] COMMAND [ARGS]...
 
 Options:
-  -v, --version                   Display's the application version
+  -v, --version                   Display''s the application version
   --install-completion [bash|zsh|fish|powershell|pwsh]
                                   Install completion for the specified shell.
   --show-completion [bash|zsh|fish|powershell|pwsh]
@@ -41,12 +41,12 @@ Commands:
 
 | command  | command description                                                                                                                      | usage                                                               | Example                                           |   |
 |----------|------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|---------------------------------------------------|---|
-| init     | used for initialization, creates necessary files and directories                                                                         | scm init                                                            |                                                   |   |
-| create   | creates the receipe .toml file in the config directory based on the receipe name                                                         | scm create --receipe <name>                                         | scm create --receipe apache                       |   |
-| validate | validates the receipe file configuration based on the standard defined resources                                                         | scm validate --receipe <name>                                       | scm validate --receipe apache                     |   |
-| info     | lists the configurations that are defined in the receipe file                                                                            | scm info --receipe <name>                                           | scm info --receipe apache                         |   |
-| diff     | lists the differences between the existing and the current configuration, if this is this is new receipe, outputs all the configurations | scm diff --receipe <name>                                           | scm diff --receipe apache                         |   |
-| push     | pushes the configuration defined in the receipe file to the operating system and stores the configuration in config_hash_directory       | scm push --receipe <name>                                           | scm push --receipe apache                         |   |
+| init     | Used for initialization, creates necessary files and directories for the tool to store configuration.                                                                        | scm init                                                            |                                                   |   |
+| create   | Creates the receipe .toml file in the config directory based on the receipe name                                                         | scm create --receipe <name>                                         | scm create --receipe apache                       |   |
+| validate | Validates the receipe file configuration based on the standard defined resources                                                         | scm validate --receipe <name>                                       | scm validate --receipe apache                     |   |
+| info     | Lists the configurations that are defined in the receipe file                                                                            | scm info --receipe <name>                                           | scm info --receipe apache                         |   |
+| diff     | Lists the differences between the existing and the current configuration, if this is this is new receipe, outputs all the configurations | scm diff --receipe <name>                                           | scm diff --receipe apache                         |   |
+| push     | Pushes the configuration defined in the receipe file to the operating system and stores the configuration in config_hash_directory       | scm push --receipe <name>                                           | scm push --receipe apache                         |   |
 | remove   | Removes the configuration from the hash directory and also removes the receipe file from the config directory                            | scm push --receipe <name> [optional --force [optional --clean-files | scm remove --receipe apache --force --clean-files |   |
 
 
@@ -97,6 +97,10 @@ In the above example, "directory" is the resource and "list" is the service iden
 * notifies -> Parameter to notify any other resource in the same recipe file, In example, notifies the service ops resources, that would restart the apache2 service based on the modifications 
 > ["install", "enable", "disable"]
 
+## File
+File resource is useful for managing the metadata and the content on the linux file system, 
+> Note that currently this resource is tested only on Ubuntu Operating System, but can run on any Linux Operating System
+
 ### Example 
 ```
 # Modify the input content of the file 
@@ -118,6 +122,25 @@ In the above example, "file" is the resource and "conf" is the service identifie
 * notifies -> Parameter to notify any other resource in the same recipe file, In example, notifies the service ops resources, that would restart the apache2 service based on the modifications 
 > ["install", "enable", "disable"]
 
+
+## Firewall
+Firewall resource is useful for managing firewall rules using UFW linux command, 
+> Note that currently this resource is tested only on Ubuntu Operating System, but can run on any Linux Operating System
+
+### Example 
+```
+# Modify the input content of the file 
+[firewall.setup]
+name = ["Apache"]
+action=["allow"]
+```
+
+In the above example, "firewall" is the resource and "setup" is the service identifier. 
+* name  -> Name of the resource where need to allow firewall traffic
+* action -> Action to be done on the listed service, currently for file only ['allow'] is supported 
+> ["allow"]
+
+
 # Complete overview of the example file 
 
 ```toml
@@ -131,6 +154,9 @@ action= ["install", "enable"]
 name = ["apache2"]
 action =["restart"]
 
+[firewall.setup]
+name = ["Apache"]
+action=["allow"]
 
 # Modify the directory permissions 
 [directory.list]
@@ -162,7 +188,7 @@ notifies = "@format {this.service.ops}"
 init command is used for initialization and helpful to create the respective directories, also this command is useful for expanding future versions of the scm tool
 
 `init`
-To start with the tool, initialize the tool without any parameters, this would set the configuration files required for tool to work
+Initialize the tool without any parameters, this would set the configuration files required for tool to work
 ```bash
 $ scm init
 ```
@@ -243,6 +269,7 @@ scm validate --receipe apache
 ```bash
 $ scm diff --receipe <receipe>
 ```
+In the below example, if the confiugration in the receipe file is already appplied, scm would output that the configuration is update to date with the existing configuration 
 ```bash
 [INFO][04-25-2022 02:05:00]::Reading the Json configuration /root/scm/settings.json
 [INFO][04-25-2022 02:05:00]::Reading the Json configuration /root/scm/settings.json
@@ -256,14 +283,96 @@ $ scm diff --receipe <receipe>
 [INFO][04-25-2022 02:05:00]::Reading the Json configuration config_hash/hash_config_md5.json
 [INFO][04-25-2022 02:05:00]::`apache` configuration is update to date with the existing configuration
 ```
-
+In the below example, if the configuration in the receipe file is pushed to the operating system to install the required services 
+```bash
+root@ip-172-31-255-140:~/scm/config# scm diff --receipe apache_remove
+[INFO][04-25-2022 02:20:37]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:20:37]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:20:37]::creating directory CONFIG_DIR
+[INFO][04-25-2022 02:20:37]::CONFIG_DIR directory already exists
+[INFO][04-25-2022 02:20:37]::creating directory CONFIG_HASH_DIR
+[INFO][04-25-2022 02:20:37]::CONFIG_HASH_DIR directory already exists
+[INFO][04-25-2022 02:20:37]::creating files CONFIG_DEF_FILE
+[INFO][04-25-2022 02:20:37]::CONFIG_DEF_FILE file already exists
+[INFO][04-25-2022 02:20:37]::creating files CONFIG_HASH_FILE
+[INFO][04-25-2022 02:20:37]::apache_remove receipe file is valid for push, use `scm diff` to differences with the existing configuration
+[INFO][04-25-2022 02:20:37]::Reading the Json configuration config_hash/hash_config_md5.json
+[INFO][04-25-2022 02:20:37]::Following resources will be applied:
+[INFO][04-25-2022 02:20:37]::SERVICE.setup: ['systemctl stop apache2', 'systemctl disable apache2', 'sudo apt-get update -y', 'sudo apt-get remove apache2 -y']
+[INFO][04-25-2022 02:20:37]::Following resources will be applied:
+[INFO][04-25-2022 02:20:37]::SERVICE.setup_php: ['sudo apt-get update -y', 'sudo apt-get remove php -y', 'sudo apt-get update -y', 'sudo apt-get remove libapache2-mod-php -y']
+```
 ## push
 `push -receipe <name>`
 ```bash
 $ scm push --receipe <receipe>
+```
+In the below example, scm push is pushing hte receipe named "apache_remove" and the subsequent commands are being run on the operating to the remove the services 
+### output
+```bash
+root@ip-172-31-255-140:~/scm/config# scm push  --receipe apache_remove
+[INFO][04-25-2022 02:21:34]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:21:34]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:21:34]::creating directory CONFIG_DIR
+[INFO][04-25-2022 02:21:34]::CONFIG_DIR directory already exists
+[INFO][04-25-2022 02:21:34]::creating directory CONFIG_HASH_DIR
+[INFO][04-25-2022 02:21:34]::CONFIG_HASH_DIR directory already exists
+[INFO][04-25-2022 02:21:34]::creating files CONFIG_DEF_FILE
+[INFO][04-25-2022 02:21:34]::CONFIG_DEF_FILE file already exists
+[INFO][04-25-2022 02:21:34]::creating files CONFIG_HASH_FILE
+[INFO][04-25-2022 02:21:34]::apache_remove receipe file is valid for push, use `scm diff` to differences with the existing configuration
+[INFO][04-25-2022 02:21:34]::Reading the Json configuration config_hash/hash_config_md5.json
+[INFO][04-25-2022 02:21:34]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:21:34]::Following resources will be applied:
+[INFO][04-25-2022 02:21:34]::SERVICE.setup: ['systemctl stop apache2', 'systemctl disable apache2', 'sudo apt-get update -y', 'sudo apt-get remove apache2 -y']
+[INFO][04-25-2022 02:21:34]::Applying the command `systemctl stop apache2`
+[INFO][04-25-2022 02:21:35]::Applying the command `systemctl disable apache2`
+Synchronizing state of apache2.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install disable apache2
+[INFO][04-25-2022 02:21:35]::Applying the command `sudo apt-get update -y`
+Hit:1 http://us-east-1.ec2.archive.ubuntu.com/ubuntu bionic InRelease
+Get:2 http://us-east-1.ec2.archive.ubuntu.com/ubuntu bionic-updates InRelease [88.7 kB]
+Get:3 http://us-east-1.ec2.archive.ubuntu.com/ubuntu bionic-backports InRelease [74.6 kB]
+Get:4 http://security.ubuntu.com/ubuntu bionic-security InRelease [88.7 kB]
+Fetched 252 kB in 0s (666 kB/s)
+Reading package lists... Done
+[INFO][04-25-2022 02:21:42]::Applying the command `sudo apt-get remove apache2 -y`
+Reading package lists... Done
+Building dependency tree
+Reading state information... Done
+The following packages were automatically installed and are no longer required:
+  apache2-data apache2-utils ssl-cert
+Use 'sudo apt autoremove' to remove them.
+The following packages will be REMOVED:
+  apache2
+0 upgraded, 0 newly installed, 1 to remove and 2 not upgraded.
+After this operation, 537 kB disk space will be freed.
+(Reading database ... 94525 files and directories currently installed.)
+Removing apache2 (2.4.29-1ubuntu4.22) ...
+Processing triggers for man-db (2.8.3-2ubuntu0.1) ...
+Processing triggers for ufw (0.36-0ubuntu0.18.04.2) ...
+Rules updated for profile 'Apache'
+
 ```
 
 ## remove
 `remove --receipe <name> --force <optional> --clean_files <optional>`
 ```bash
 $ scm push --receipe <receipe>
+```
+In the below example, scm is removing the `apache_remove` receipe from the configuration hash directory,
+### output 
+```bash
+scm remove --receipe apache_remove
+[INFO][04-25-2022 02:33:38]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:33:38]::Reading the Json configuration /root/scm/config/settings.json
+[INFO][04-25-2022 02:33:38]::creating directory CONFIG_DIR
+[INFO][04-25-2022 02:33:38]::CONFIG_DIR directory already exists
+[INFO][04-25-2022 02:33:38]::creating directory CONFIG_HASH_DIR
+[INFO][04-25-2022 02:33:38]::CONFIG_HASH_DIR directory already exists
+[INFO][04-25-2022 02:33:38]::creating files CONFIG_DEF_FILE
+[INFO][04-25-2022 02:33:38]::CONFIG_DEF_FILE file already exists
+[INFO][04-25-2022 02:33:38]::creating files CONFIG_HASH_FILE
+[INFO][04-25-2022 02:33:38]::apache_remove receipe file is valid for push, use `scm diff` to differences with the existing configuration
+[INFO][04-25-2022 02:33:38]::Configuration doesn't remove the receipe file, please clean up manually
+```
