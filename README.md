@@ -7,7 +7,7 @@ This tool, currently supports below resources
 * directory
 * file 
 * firewall
-***A resource definition in scm is directly related to the action of standard linux 
+>A resource definition in scm is directly related to the action of standard linux commands, example. service, directories, files.
 
 >pre-requisites install python3 environment on the machine
 # Usage
