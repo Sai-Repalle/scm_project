@@ -325,6 +325,7 @@ def push(
     with open(hash_config_dir, "w") as output:
         json.dump(new_hash_dict, output)
 
+    logging.info("Applied all the changes without any issues")
     return 0
 
 

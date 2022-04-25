@@ -9,12 +9,18 @@ This tool, currently supports below resources
 * firewall
 >A resource definition in scm is directly related to the action of standard linux commands, example. service, directories, files.
 
->pre-requisites install python3 environment on the machine
-# Usage
-```bash 
-pip install scm-config
-```
+>pre-requisites install python 3.6 & above environment on the machine
 
+# Installation
+```bash
+sudo apt-get update
+sudo apt-get install python3.8 python3-pip -y
+mkdir -p /root/scm
+cd /root/scm
+pip3 install scm-config
+scm -v 
+```
+# Usage
 ```bash
 Usage: scm [OPTIONS] COMMAND [ARGS]...
 
@@ -36,6 +42,17 @@ Commands:
   remove
   validate
 ```
+>> scm creates two directories in the root directory during the "init" command, for example "/root/scm", one is for storing the receipe configuration and other one is for maintaining the configuration in the hash format, this mechanism provides the scm to run any number of times without worrying about the failures.
+
+## Example workflow for Apache+PHP configuration(After the installation)
+
+- scm init 
+- scm create --receipe "apache"
+- Copy the contents from the [apache.toml](https://github.com/Sai-Repalle/scm_apache/blob/main/apache.toml) to root/scm/config/apache.toml 
+- scm validate --receipe "apache"
+- scm diff --receipe "apache" 
+- scm push --receipe "apache"
+
 
 # Commands overview 
 
