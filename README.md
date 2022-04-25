@@ -97,6 +97,10 @@ In the above example, "directory" is the resource and "list" is the service iden
 * notifies -> Parameter to notify any other resource in the same recipe file, In example, notifies the service ops resources, that would restart the apache2 service based on the modifications 
 > ["install", "enable", "disable"]
 
+## File
+File resource is useful for managing the metadata and the content on the linux file system, 
+> Note that currently this resource is tested only on Ubuntu Operating System, but can run on any Linux Operating System
+
 ### Example 
 ```
 # Modify the input content of the file 
@@ -118,6 +122,25 @@ In the above example, "file" is the resource and "conf" is the service identifie
 * notifies -> Parameter to notify any other resource in the same recipe file, In example, notifies the service ops resources, that would restart the apache2 service based on the modifications 
 > ["install", "enable", "disable"]
 
+
+## Firewall
+Firewall resource is useful for managing firewall rules using UFW linux command, 
+> Note that currently this resource is tested only on Ubuntu Operating System, but can run on any Linux Operating System
+
+### Example 
+```
+# Modify the input content of the file 
+[firewall.setup]
+name = ["Apache"]
+action=["allow"]
+
+
+In the above example, "firewall" is the resource and "setup" is the service identifier. 
+* name  -> Name of the resource where need to allow firewall traffic
+* action -> Action to be done on the listed service, currently for file only ['allow'] is supported 
+> ["allow"]
+
+
 # Complete overview of the example file 
 
 ```toml
@@ -131,6 +154,9 @@ action= ["install", "enable"]
 name = ["apache2"]
 action =["restart"]
 
+[firewall.setup]
+name = ["Apache"]
+action=["allow"]
 
 # Modify the directory permissions 
 [directory.list]
@@ -348,5 +374,5 @@ scm remove --receipe apache_remove
 [INFO][04-25-2022 02:33:38]::CONFIG_DEF_FILE file already exists
 [INFO][04-25-2022 02:33:38]::creating files CONFIG_HASH_FILE
 [INFO][04-25-2022 02:33:38]::apache_remove receipe file is valid for push, use `scm diff` to differences with the existing configuration
-[INFO][04-25-2022 02:33:38]::Configuration doesn\'t remove the receipe file, please clean up manually
+[INFO][04-25-2022 02:33:38]::Configuration doesn't remove the receipe file, please clean up manually
 ```
