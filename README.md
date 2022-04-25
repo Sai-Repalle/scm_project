@@ -10,11 +10,15 @@ This tool, currently supports below resources
 >A resource definition in scm is directly related to the action of standard linux commands, example. service, directories, files.
 
 >pre-requisites install python3 environment on the machine
-# Usage
-```bash 
-pip install scm-config
-```
 
+# Installation
+```bash 
+mkdir -p /root/scm
+cd /root/scm
+pip install scm-config
+scm -v 
+```
+# Usage
 ```bash
 Usage: scm [OPTIONS] COMMAND [ARGS]...
 
@@ -36,6 +40,8 @@ Commands:
   remove
   validate
 ```
+>> scm creates two directories in the root directory during the "init" command, for example "/root/scm", one is for storing the receipe configuration and other one is for maintaining the configuration in the hash format, this mechanism provides the scm to run any number of times without worrying about the failures.
+
 
 # Commands overview 
 
@@ -49,7 +55,7 @@ Commands:
 | push     | Pushes the configuration defined in the receipe file to the operating system and stores the configuration in config_hash_directory       | scm push --receipe <name>                                           | scm push --receipe apache                         |   |
 | remove   | Removes the configuration from the hash directory and also removes the receipe file from the config directory                            | scm push --receipe <name> [optional --force [optional --clean-files | scm remove --receipe apache --force --clean-files |   |
 
-
+#
 # Resource Detailed information 
 ## Service 
 Service resource is useful for installing and managing packages from the linux repository, 
