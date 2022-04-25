@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "scm_config"
-version = "0.2.1"
+version = "1.0.0"
 description = "self configuration management written in Python"
 authors = ["Sai Repalle <n.repalle85@gmail.com>"]
 
