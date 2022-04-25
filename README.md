@@ -133,7 +133,7 @@ Firewall resource is useful for managing firewall rules using UFW linux command,
 [firewall.setup]
 name = ["Apache"]
 action=["allow"]
-
+```
 
 In the above example, "firewall" is the resource and "setup" is the service identifier. 
 * name  -> Name of the resource where need to allow firewall traffic
